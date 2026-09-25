@@ -1,3 +1,5 @@
+@file:OptIn(androidx.compose.material3.ExperimentalMaterial3ExpressiveApi::class)
+
 package io.github.dovecoteescapee.byedpi.ui.screens
 
 import android.content.Intent
@@ -20,8 +22,8 @@ import io.github.dovecoteescapee.byedpi.R
 import io.github.dovecoteescapee.byedpi.activities.MainActivity
 import io.github.dovecoteescapee.byedpi.ui.components.EditTextPreferenceItem
 import io.github.dovecoteescapee.byedpi.ui.components.ListPreferenceItem
-import io.github.dovecoteescapee.byedpi.ui.components.PreferenceCategoryHeader
 import io.github.dovecoteescapee.byedpi.ui.components.PreferenceItem
+import io.github.dovecoteescapee.byedpi.ui.components.SettingsGroup
 import io.github.dovecoteescapee.byedpi.ui.components.SwitchPreferenceItem
 import io.github.dovecoteescapee.byedpi.utility.checkNotLocalIp
 
@@ -58,142 +60,151 @@ fun MainSettingsScreen(
     }
 
     val isVpnMode = byedpiMode == "vpn"
+    val generalCount = if (isVpnMode) {
+        5
+    } else {
+        3
+    }
 
     LazyColumn(modifier = modifier.fillMaxSize()) {
         item {
-            PreferenceCategoryHeader(title = stringResource(R.string.general_category))
-        }
-        item {
-            ListPreferenceItem(
-                title = stringResource(R.string.theme_settings),
-                selectedValue = appTheme,
-                entries = stringArrayResource(R.array.themes).toList(),
-                entryValues = stringArrayResource(R.array.themes_entries).toList(),
-                onValueChange = { newValue ->
-                    appTheme = newValue
-                    prefs.edit { putString("app_theme", newValue) }
-                    MainActivity.applyAppTheme(newValue)
-                },
-            )
-        }
-        item {
-            ListPreferenceItem(
-                title = stringResource(R.string.mode_setting),
-                selectedValue = byedpiMode,
-                entries = stringArrayResource(R.array.byedpi_modes).toList(),
-                entryValues = stringArrayResource(R.array.byedpi_modes_entries).toList(),
-                onValueChange = { newValue ->
-                    byedpiMode = newValue
-                    prefs.edit { putString("byedpi_mode", newValue) }
-                },
-            )
-        }
-        item {
-            SwitchPreferenceItem(
-                title = stringResource(R.string.autostart_setting),
-                checked = autostart,
-                onCheckedChange = { checked ->
-                    autostart = checked
-                    prefs.edit { putBoolean("autostart", checked) }
-                },
-            )
-        }
-        if (isVpnMode) {
-            item {
-                EditTextPreferenceItem(
-                    title = stringResource(R.string.dbs_ip_setting),
-                    value = dnsIp,
-                    onValueChange = { newValue ->
-                        dnsIp = newValue
-                        prefs.edit { putString("dns_ip", newValue) }
-                    },
-                    validate = { it.isBlank() || checkNotLocalIp(it) },
-                )
-            }
-            item {
-                SwitchPreferenceItem(
-                    title = stringResource(R.string.ipv6_setting),
-                    checked = ipv6Enable,
-                    onCheckedChange = { checked ->
-                        ipv6Enable = checked
-                        prefs.edit { putBoolean("ipv6_enable", checked) }
-                    },
-                )
-            }
-        }
-
-        item {
-            PreferenceCategoryHeader(title = stringResource(R.string.byedpi_category))
-        }
-        item {
-            SwitchPreferenceItem(
-                title = stringResource(R.string.use_command_line_settings),
-                checked = cmdSettingsEnabled,
-                onCheckedChange = { checked ->
-                    cmdSettingsEnabled = checked
-                    prefs.edit { putBoolean("byedpi_enable_cmd_settings", checked) }
-                },
-            )
-        }
-        item {
-            PreferenceItem(
-                title = stringResource(R.string.ui_editor),
-                enabled = !cmdSettingsEnabled,
-                onClick = onNavigateToUiSettings,
-            )
-        }
-        item {
-            PreferenceItem(
-                title = stringResource(R.string.command_line_editor),
-                enabled = cmdSettingsEnabled,
-                onClick = onNavigateToCmdSettings,
-            )
-        }
-
-        if (isVpnMode) {
-            item {
-                PreferenceCategoryHeader(title = stringResource(R.string.vpn_category))
-            }
-            item {
+            SettingsGroup(title = stringResource(R.string.general_category)) {
                 ListPreferenceItem(
-                    title = stringResource(R.string.vpn_filter_mode),
-                    selectedValue = vpnFilterMode,
-                    entries = stringArrayResource(R.array.vpn_filtering_modes).toList(),
-                    entryValues = stringArrayResource(R.array.vpn_filtering_modes_entries).toList(),
+                    title = stringResource(R.string.theme_settings),
+                    selectedValue = appTheme,
+                    entries = stringArrayResource(R.array.themes).toList(),
+                    entryValues = stringArrayResource(R.array.themes_entries).toList(),
+                    index = 0,
+                    count = generalCount,
                     onValueChange = { newValue ->
-                        vpnFilterMode = newValue
-                        prefs.edit { putString("vpn_filter_mode", newValue) }
+                        appTheme = newValue
+                        prefs.edit { putString("app_theme", newValue) }
+                        MainActivity.applyAppTheme(newValue)
                     },
                 )
-            }
-            item {
-                PreferenceItem(
-                    title = stringResource(R.string.vpn_filtered_apps),
-                    onClick = onNavigateToVpnAppsFilter,
+                ListPreferenceItem(
+                    title = stringResource(R.string.mode_setting),
+                    selectedValue = byedpiMode,
+                    entries = stringArrayResource(R.array.byedpi_modes).toList(),
+                    entryValues = stringArrayResource(R.array.byedpi_modes_entries).toList(),
+                    index = 1,
+                    count = generalCount,
+                    onValueChange = { newValue ->
+                        byedpiMode = newValue
+                        prefs.edit { putString("byedpi_mode", newValue) }
+                    },
                 )
+                SwitchPreferenceItem(
+                    title = stringResource(R.string.autostart_setting),
+                    checked = autostart,
+                    index = 2,
+                    count = generalCount,
+                    onCheckedChange = { checked ->
+                        autostart = checked
+                        prefs.edit { putBoolean("autostart", checked) }
+                    },
+                )
+                if (isVpnMode) {
+                    EditTextPreferenceItem(
+                        title = stringResource(R.string.dbs_ip_setting),
+                        value = dnsIp,
+                        index = 3,
+                        count = generalCount,
+                        onValueChange = { newValue ->
+                            dnsIp = newValue
+                            prefs.edit { putString("dns_ip", newValue) }
+                        },
+                        validate = { it.isBlank() || checkNotLocalIp(it) },
+                    )
+                    SwitchPreferenceItem(
+                        title = stringResource(R.string.ipv6_setting),
+                        checked = ipv6Enable,
+                        index = 4,
+                        count = generalCount,
+                        onCheckedChange = { checked ->
+                            ipv6Enable = checked
+                            prefs.edit { putBoolean("ipv6_enable", checked) }
+                        },
+                    )
+                }
             }
         }
 
         item {
-            PreferenceCategoryHeader(title = stringResource(R.string.about_category))
+            SettingsGroup(title = stringResource(R.string.byedpi_category)) {
+                SwitchPreferenceItem(
+                    title = stringResource(R.string.use_command_line_settings),
+                    checked = cmdSettingsEnabled,
+                    index = 0,
+                    count = 3,
+                    onCheckedChange = { checked ->
+                        cmdSettingsEnabled = checked
+                        prefs.edit { putBoolean("byedpi_enable_cmd_settings", checked) }
+                    },
+                )
+                PreferenceItem(
+                    title = stringResource(R.string.ui_editor),
+                    enabled = !cmdSettingsEnabled,
+                    index = 1,
+                    count = 3,
+                    onClick = onNavigateToUiSettings,
+                )
+                PreferenceItem(
+                    title = stringResource(R.string.command_line_editor),
+                    enabled = cmdSettingsEnabled,
+                    index = 2,
+                    count = 3,
+                    onClick = onNavigateToCmdSettings,
+                )
+            }
         }
-        item {
-            PreferenceItem(
-                title = stringResource(R.string.version),
-                summary = BuildConfig.VERSION_NAME,
-            )
-        }
-        item {
-            PreferenceItem(
-                title = stringResource(R.string.source_code_link),
-                onClick = {
-                    val intent = Intent(
-                        Intent.ACTION_VIEW,
-                        Uri.parse("https://github.com/dovecoteescapee/ByeDPIAndroid"),
+
+        if (isVpnMode) {
+            item {
+                SettingsGroup(title = stringResource(R.string.vpn_category)) {
+                    ListPreferenceItem(
+                        title = stringResource(R.string.vpn_filter_mode),
+                        selectedValue = vpnFilterMode,
+                        entries = stringArrayResource(R.array.vpn_filtering_modes).toList(),
+                        entryValues = stringArrayResource(R.array.vpn_filtering_modes_entries).toList(),
+                        index = 0,
+                        count = 2,
+                        onValueChange = { newValue ->
+                            vpnFilterMode = newValue
+                            prefs.edit { putString("vpn_filter_mode", newValue) }
+                        },
                     )
-                    context.startActivity(intent)
-                },
-            )
+                    PreferenceItem(
+                        title = stringResource(R.string.vpn_filtered_apps),
+                        index = 1,
+                        count = 2,
+                        onClick = onNavigateToVpnAppsFilter,
+                    )
+                }
+            }
+        }
+
+        item {
+            SettingsGroup(title = stringResource(R.string.about_category)) {
+                PreferenceItem(
+                    title = stringResource(R.string.version),
+                    summary = BuildConfig.VERSION_NAME,
+                    index = 0,
+                    count = 2,
+                )
+                PreferenceItem(
+                    title = stringResource(R.string.source_code_link),
+                    index = 1,
+                    count = 2,
+                    onClick = {
+                        val intent = Intent(
+                            Intent.ACTION_VIEW,
+                            Uri.parse("https://github.com/dovecoteescapee/ByeDPIAndroid"),
+                        )
+                        context.startActivity(intent)
+                    },
+                )
+            }
         }
     }
 }

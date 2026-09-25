@@ -17,7 +17,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import io.github.dovecoteescapee.byedpi.R
-import io.github.dovecoteescapee.byedpi.ui.components.PreferenceCategoryHeader
+import io.github.dovecoteescapee.byedpi.ui.components.SettingsGroup
 
 @Composable
 fun CmdSettingsScreen(
@@ -31,29 +31,27 @@ fun CmdSettingsScreen(
             .verticalScroll(rememberScrollState())
             .padding(vertical = 8.dp),
     ) {
-        PreferenceCategoryHeader(title = stringResource(R.string.command_line_arguments))
-
-        Card(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 8.dp),
-            shape = RoundedCornerShape(16.dp),
-            colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
-            ),
-        ) {
-            OutlinedTextField(
-                value = cmdArgs,
-                onValueChange = onCmdArgsChange,
-                label = { Text(stringResource(R.string.command_line_arguments)) },
-                placeholder = { Text("-s1 -q1 -Y") },
-                minLines = 4,
-                maxLines = 10,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp),
-                shape = RoundedCornerShape(12.dp),
-            )
+        SettingsGroup(title = stringResource(R.string.command_line_arguments)) {
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceContainer,
+                ),
+            ) {
+                OutlinedTextField(
+                    value = cmdArgs,
+                    onValueChange = onCmdArgsChange,
+                    label = { Text(stringResource(R.string.command_line_arguments)) },
+                    placeholder = { Text("-s1 -q1 -Y") },
+                    minLines = 4,
+                    maxLines = 10,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    shape = RoundedCornerShape(12.dp),
+                )
+            }
         }
     }
 }

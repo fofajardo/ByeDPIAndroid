@@ -15,7 +15,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import io.github.dovecoteescapee.byedpi.R
@@ -59,23 +58,6 @@ fun MainScreen(
                 text = proxyAddress,
                 style = MaterialTheme.typography.bodyMedium,
                 modifier = Modifier.padding(top = 4.dp)
-            )
-        }
-    }
-}
-
-@Preview(name = "Light Mode", showBackground = true)
-@Preview(name = "Dark Mode", uiMode = Configuration.UI_MODE_NIGHT_YES, showBackground = true)
-@Composable
-fun MainScreenPreview() {
-    ByeDpiTheme {
-        Surface {
-            MainScreen(
-                buttonText = stringResource(R.string.vpn_connect),
-                statusText = stringResource(R.string.vpn_disconnected),
-                proxyAddress = "127.0.0.1:1080",
-                buttonEnabled = true,
-                onButtonClick = {}
             )
         }
     }

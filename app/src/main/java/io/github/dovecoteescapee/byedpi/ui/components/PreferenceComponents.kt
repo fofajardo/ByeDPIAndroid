@@ -1,23 +1,20 @@
 package io.github.dovecoteescapee.byedpi.ui.components
 
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.selection.selectable
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.ListItem
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
+import androidx.compose.material3.ListItemColors
 import androidx.compose.material3.ListItemDefaults
+import androidx.compose.material3.ListItemShapes
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.RadioButton
-import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -27,124 +24,103 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
+import com.alorma.compose.settings.ui.expressive.SettingsMenuLink
+import com.alorma.compose.settings.ui.expressive.SettingsSwitch
 
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
-fun PreferenceCategoryHeader(title: String) {
-    Text(
-        text = title,
-        style = MaterialTheme.typography.labelLarge,
-        color = MaterialTheme.colorScheme.primary,
-        modifier = Modifier.padding(start = 24.dp, top = 20.dp, end = 24.dp, bottom = 8.dp)
+fun defaultSegmentedColors(): ListItemColors {
+    return ListItemDefaults.segmentedColors(
+        containerColor = MaterialTheme.colorScheme.surfaceContainer,
     )
 }
 
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
+@Composable
+fun SettingsGroup(
+    title: String,
+    modifier: Modifier = Modifier,
+    content: @Composable ColumnScope.() -> Unit,
+) {
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 8.dp),
+    ) {
+        Text(
+            text = title,
+            style = MaterialTheme.typography.labelLarge,
+            color = MaterialTheme.colorScheme.primary,
+            modifier = Modifier.padding(start = 8.dp, bottom = 8.dp),
+        )
+        Column(
+            verticalArrangement = Arrangement.spacedBy(ListItemDefaults.SegmentedGap),
+            content = content,
+        )
+    }
+}
+
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun PreferenceItem(
     title: String,
     summary: String? = null,
     enabled: Boolean = true,
-    onClick: (() -> Unit)? = null
+    index: Int = 0,
+    count: Int = 1,
+    shapes: ListItemShapes = ListItemDefaults.segmentedShapes(index, count),
+    colors: ListItemColors = defaultSegmentedColors(),
+    onClick: (() -> Unit)? = null,
 ) {
-    ListItem(
-        headlineContent = {
-            Text(
-                text = title,
-                style = MaterialTheme.typography.bodyLarge,
-            )
-        },
-        supportingContent = if (!summary.isNullOrEmpty()) {
-            {
-                Text(
-                    text = summary,
-                    style = MaterialTheme.typography.bodyMedium,
-                )
-            }
+    SettingsMenuLink(
+        title = { Text(text = title) },
+        subtitle = if (!summary.isNullOrEmpty()) {
+            { Text(text = summary) }
         } else {
             null
         },
-        colors = ListItemDefaults.colors(
-            containerColor = Color.Transparent,
-            headlineColor = if (enabled) {
-                MaterialTheme.colorScheme.onSurface
-            } else {
-                MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
-            },
-            supportingColor = if (enabled) {
-                MaterialTheme.colorScheme.onSurfaceVariant
-            } else {
-                MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.38f)
-            },
-        ),
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(enabled = enabled && onClick != null) {
-                if (onClick != null) {
-                    onClick()
-                }
+        enabled = enabled,
+        colors = colors,
+        shapes = shapes,
+        onClick = {
+            if (onClick != null) {
+                onClick()
             }
-            .padding(horizontal = 8.dp)
+        },
     )
 }
 
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun SwitchPreferenceItem(
     title: String,
     checked: Boolean,
     onCheckedChange: (Boolean) -> Unit,
     summary: String? = null,
-    enabled: Boolean = true
+    enabled: Boolean = true,
+    index: Int = 0,
+    count: Int = 1,
+    shapes: ListItemShapes = ListItemDefaults.segmentedShapes(index, count),
+    colors: ListItemColors = defaultSegmentedColors(),
 ) {
-    ListItem(
-        headlineContent = {
-            Text(
-                text = title,
-                style = MaterialTheme.typography.bodyLarge,
-            )
-        },
-        supportingContent = if (!summary.isNullOrEmpty()) {
-            {
-                Text(
-                    text = summary,
-                    style = MaterialTheme.typography.bodyMedium,
-                )
-            }
+    SettingsSwitch(
+        state = checked,
+        title = { Text(text = title) },
+        subtitle = if (!summary.isNullOrEmpty()) {
+            { Text(text = summary) }
         } else {
             null
         },
-        trailingContent = {
-            Switch(
-                checked = checked,
-                onCheckedChange = onCheckedChange,
-                enabled = enabled
-            )
-        },
-        colors = ListItemDefaults.colors(
-            containerColor = Color.Transparent,
-            headlineColor = if (enabled) {
-                MaterialTheme.colorScheme.onSurface
-            } else {
-                MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
-            },
-            supportingColor = if (enabled) {
-                MaterialTheme.colorScheme.onSurfaceVariant
-            } else {
-                MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.38f)
-            },
-        ),
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(enabled = enabled) {
-                onCheckedChange(!checked)
-            }
-            .padding(horizontal = 8.dp)
+        enabled = enabled,
+        colors = colors,
+        shapes = shapes,
+        onCheckedChange = onCheckedChange,
     )
 }
 
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun ListPreferenceItem(
     title: String,
@@ -152,17 +128,23 @@ fun ListPreferenceItem(
     entries: List<String>,
     entryValues: List<String>,
     onValueChange: (String) -> Unit,
-    enabled: Boolean = true
+    enabled: Boolean = true,
+    index: Int = 0,
+    count: Int = 1,
+    shapes: ListItemShapes = ListItemDefaults.segmentedShapes(index, count),
+    colors: ListItemColors = defaultSegmentedColors(),
 ) {
     var showDialog by remember { mutableStateOf(false) }
     val selectedIndex = entryValues.indexOf(selectedValue).coerceAtLeast(0)
     val displaySummary = entries.getOrNull(selectedIndex) ?: selectedValue
 
-    PreferenceItem(
-        title = title,
-        summary = displaySummary,
+    SettingsMenuLink(
+        title = { Text(text = title) },
+        subtitle = { Text(text = displaySummary) },
         enabled = enabled,
-        onClick = { showDialog = true }
+        colors = colors,
+        shapes = shapes,
+        onClick = { showDialog = true },
     )
 
     if (showDialog) {
@@ -171,8 +153,8 @@ fun ListPreferenceItem(
             title = { Text(text = title) },
             text = {
                 Column {
-                    entries.forEachIndexed { index, entryText ->
-                        val value = entryValues[index]
+                    entries.forEachIndexed { idx, entryText ->
+                        val value = entryValues[idx]
                         val isSelected = value == selectedValue
                         Row(
                             modifier = Modifier
@@ -183,19 +165,19 @@ fun ListPreferenceItem(
                                         onValueChange(value)
                                         showDialog = false
                                     },
-                                    role = Role.RadioButton
+                                    role = Role.RadioButton,
                                 )
                                 .padding(vertical = 12.dp),
-                            verticalAlignment = Alignment.CenterVertically
+                            verticalAlignment = Alignment.CenterVertically,
                         ) {
                             RadioButton(
                                 selected = isSelected,
-                                onClick = null
+                                onClick = null,
                             )
                             Text(
                                 text = entryText,
                                 style = MaterialTheme.typography.bodyLarge,
-                                modifier = Modifier.padding(start = 16.dp)
+                                modifier = Modifier.padding(start = 16.dp),
                             )
                         }
                     }
@@ -206,11 +188,12 @@ fun ListPreferenceItem(
                 TextButton(onClick = { showDialog = false }) {
                     Text("Cancel")
                 }
-            }
+            },
         )
     }
 }
 
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun EditTextPreferenceItem(
     title: String,
@@ -218,17 +201,23 @@ fun EditTextPreferenceItem(
     onValueChange: (String) -> Unit,
     summary: String? = null,
     enabled: Boolean = true,
-    validate: ((String) -> Boolean)? = null
+    index: Int = 0,
+    count: Int = 1,
+    shapes: ListItemShapes = ListItemDefaults.segmentedShapes(index, count),
+    colors: ListItemColors = defaultSegmentedColors(),
+    validate: ((String) -> Boolean)? = null,
 ) {
     var showDialog by remember { mutableStateOf(false) }
     var textInput by remember(showDialog) { mutableStateOf(value) }
     var isError by remember { mutableStateOf(false) }
 
-    PreferenceItem(
-        title = title,
-        summary = summary ?: value,
+    SettingsMenuLink(
+        title = { Text(text = title) },
+        subtitle = { Text(text = summary ?: value) },
         enabled = enabled,
-        onClick = { showDialog = true }
+        colors = colors,
+        shapes = shapes,
+        onClick = { showDialog = true },
     )
 
     if (showDialog) {
@@ -248,7 +237,7 @@ fun EditTextPreferenceItem(
                     },
                     isError = isError,
                     singleLine = true,
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth(),
                 )
             },
             confirmButton = {
@@ -265,7 +254,7 @@ fun EditTextPreferenceItem(
                         } else {
                             isError = true
                         }
-                    }
+                    },
                 ) {
                     Text("OK")
                 }
@@ -274,7 +263,7 @@ fun EditTextPreferenceItem(
                 TextButton(onClick = { showDialog = false }) {
                     Text("Cancel")
                 }
-            }
+            },
         )
     }
 }
