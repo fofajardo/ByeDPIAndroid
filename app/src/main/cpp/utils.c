@@ -1,445 +1,421 @@
-#include <getopt.h>
-#include <stdlib.h>
 #include <string.h>
+#include <stdlib.h>
+#include <stdio.h>
+#include <unistd.h>
+#include <getopt.h>
+#include <netdb.h>
+#include <fcntl.h>
+#include <sys/socket.h>
+#include <arpa/inet.h>
+#include <netinet/in.h>
 
+#include <jni.h>
+#include <android/log.h>
+
+#include "byedpi/error.h"
+#include "byedpi/proxy.h"
 #include "byedpi/params.h"
-#include "error.h"
-#include "main.h"
-#include "packets.h"
+#include "byedpi/packets.h"
 #include "utils.h"
 
 struct params default_params;
 
 void reset_params(void) {
-    clear_params();
+    clear_params(NULL, NULL);
     params = default_params;
 }
 
-extern const struct option options[38];
-
-int parse_args(int argc, char **argv)
-{
-    int optc = sizeof(options)/sizeof(*options);
-    for (int i = 0, e = optc; i < e; i++)
-        optc += options[i].has_arg;
-
-    char opt[optc + 1];
-    opt[optc] = 0;
-
-    for (int i = 0, o = 0; o < optc; i++, o++) {
-        opt[o] = options[i].val;
-        for (int c = options[i].has_arg; c; c--) {
-            o++;
-            opt[o] = ':';
-        }
+void add_arg(char ***argv, int *argc, int *capacity, const char *arg) {
+    if (!arg) {
+        return;
     }
+    if (*argc + 1 >= *capacity) {
+        *capacity *= 2;
+        *argv = realloc(*argv, sizeof(char *) * (*capacity));
+    }
+    (*argv)[(*argc)++] = strdup(arg);
+    (*argv)[*argc] = NULL;
+}
 
-    params.laddr.sin6_port = htons(1080);
+int create_socket_from_cmdline(JNIEnv *env, jobjectArray args) {
+    int argc = (*env)->GetArrayLength(env, args);
+    char **argv = malloc(sizeof(char *) * (argc + 1));
+    if (!argv) {
+        return -1;
+    }
+    for (int i = 0; i < argc; i++) {
+        jstring arg = (jstring) (*env)->GetObjectArrayElement(env, args, i);
+        const char *arg_str = (*env)->GetStringUTFChars(env, arg, 0);
+        argv[i] = strdup(arg_str);
+        (*env)->ReleaseStringUTFChars(env, arg, arg_str);
+    }
+    argv[argc] = NULL;
 
-    int rez;
-    int invalid = 0;
+    optind = 1;
+    optreset = 1;
 
-    long val;
-    char *end = 0;
+    int res = parse_args(argc, argv);
+    for (int i = 0; i < argc; i++) {
+        free(argv[i]);
+    }
+    free(argv);
 
-    struct desync_params *dp = add((void *)&params.dp,
-                                   &params.dp_count, sizeof(struct desync_params));
-    if (!dp) {
+    if (res < 0) {
+        uniperror("parse_args");
         reset_params();
         return -1;
     }
 
-    optind = optreset = 1;
+    if (init() < 0) {
+        uniperror("init");
+        reset_params();
+        return -1;
+    }
 
-    while (!invalid && (rez = getopt_long(
-            argc, argv, opt, options, 0)) != -1) {
+    int fd = listen_socket(&params.laddr);
+    if (fd < 0) {
+        uniperror("listen_socket");
+        reset_params();
+        return -1;
+    }
+    LOG(LOG_S, "listen_socket, fd: %d", fd);
 
-        switch (rez) {
+    return fd;
+}
 
-            case 'N':
-                params.resolve = 0;
-                break;
-            case 'X':
-                params.ipv6 = 0;
-                break;
-            case 'U':
-                params.udp = 0;
-                break;
+int create_socket_from_ui(
+        JNIEnv *env,
+        jstring ip,
+        jint port,
+        jint max_connections,
+        jint buffer_size,
+        jint default_ttl,
+        jboolean custom_ttl,
+        jboolean no_domain,
+        jboolean desync_http,
+        jboolean desync_https,
+        jboolean desync_udp,
+        jint desync_method,
+        jint split_position,
+        jboolean split_at_host,
+        jint fake_ttl,
+        jstring fake_sni,
+        jbyte custom_oob_char,
+        jboolean host_mixed_case,
+        jboolean domain_mixed_case,
+        jboolean host_remove_spaces,
+        jboolean tls_record_split,
+        jint tls_record_split_position,
+        jboolean tls_record_split_at_sni,
+        jint hosts_mode,
+        jstring hosts,
+        jboolean tfo,
+        jint udp_fake_count,
+        jboolean drop_sack,
+        jint fake_offset) {
+    int capacity = 64;
+    int argc = 0;
+    char **argv = malloc(sizeof(char *) * capacity);
+    if (!argv) {
+        return -1;
+    }
+    argv[0] = NULL;
 
-//            case 'h':
-//                printf(help_text);
-//                reset_params();
-//                return 0;
-//            case 'v':
-//                printf("%s\n", VERSION);
-//                reset_params();
-//                return 0;
+    add_arg(&argv, &argc, &capacity, "ciadpi");
 
-            case 'i':
-                if (get_addr(optarg,
-                             (struct sockaddr_ina *)&params.laddr) < 0)
-                    invalid = 1;
-                break;
+    // IP
+    const char *ip_str = (*env)->GetStringUTFChars(env, ip, 0);
+    if (ip_str != NULL && strlen(ip_str) > 0) {
+        add_arg(&argv, &argc, &capacity, "-i");
+        add_arg(&argv, &argc, &capacity, ip_str);
+    }
+    if (ip_str != NULL) {
+        (*env)->ReleaseStringUTFChars(env, ip, ip_str);
+    }
 
-            case 'p':
-                val = strtol(optarg, &end, 0);
-                if (val <= 0 || val > 0xffff || *end)
-                    invalid = 1;
-                else
-                    params.laddr.sin6_port = htons(val);
-                break;
+    // Port
+    char port_buf[16];
+    snprintf(port_buf, sizeof(port_buf), "%d", port);
+    add_arg(&argv, &argc, &capacity, "-p");
+    add_arg(&argv, &argc, &capacity, port_buf);
 
-            case 'I':
-                if (get_addr(optarg,
-                             (struct sockaddr_ina *)&params.baddr) < 0)
-                    invalid = 1;
-                break;
+    // Max connections
+    if (max_connections > 0) {
+        char mc_buf[16];
+        snprintf(mc_buf, sizeof(mc_buf), "%d", max_connections);
+        add_arg(&argv, &argc, &capacity, "-c");
+        add_arg(&argv, &argc, &capacity, mc_buf);
+    }
 
-            case 'b':
-                val = strtol(optarg, &end, 0);
-                if (val <= 0 || val > INT_MAX/4 || *end)
-                    invalid = 1;
-                else
-                    params.bfsize = val;
-                break;
+    // Buffer size
+    if (buffer_size > 0) {
+        char bs_buf[16];
+        snprintf(bs_buf, sizeof(bs_buf), "%d", buffer_size);
+        add_arg(&argv, &argc, &capacity, "-b");
+        add_arg(&argv, &argc, &capacity, bs_buf);
+    }
 
-            case 'c':
-                val = strtol(optarg, &end, 0);
-                if (val <= 0 || val >= (0xffff/2) || *end)
-                    invalid = 1;
-                else
-                    params.max_open = val;
-                break;
+    // Default TTL
+    if (custom_ttl && default_ttl > 0) {
+        char ttl_buf[16];
+        snprintf(ttl_buf, sizeof(ttl_buf), "%d", default_ttl);
+        add_arg(&argv, &argc, &capacity, "-g");
+        add_arg(&argv, &argc, &capacity, ttl_buf);
+    }
 
-            case 'x': //
-                params.debug = strtol(optarg, 0, 0);
-                if (params.debug < 0)
-                    invalid = 1;
-                break;
+    // No domain
+    if (no_domain) {
+        add_arg(&argv, &argc, &capacity, "-N");
+    }
 
-            // desync options
+    // TFO
+    if (tfo) {
+        add_arg(&argv, &argc, &capacity, "-F");
+    }
 
-            case 'F':
-                params.tfo = 1;
-                break;
+    // Hosts filter
+    const char *hosts_str = NULL;
+    if (hosts != NULL) {
+        hosts_str = (*env)->GetStringUTFChars(env, hosts, 0);
+    }
 
-            case 'A':
-                dp = add((void *)&params.dp, &params.dp_count,
-                         sizeof(struct desync_params));
-                if (!dp) {
-                    reset_params();
-                    return -1;
+    if (hosts_mode == 1 && hosts_str != NULL && strlen(hosts_str) > 0) {
+        size_t hlen = strlen(hosts_str) + 2;
+        char *harg = malloc(hlen);
+        if (harg != NULL) {
+            snprintf(harg, hlen, ":%s", hosts_str);
+            add_arg(&argv, &argc, &capacity, "-H");
+            add_arg(&argv, &argc, &capacity, harg);
+            free(harg);
+        }
+        add_arg(&argv, &argc, &capacity, "-A");
+        add_arg(&argv, &argc, &capacity, "none");
+    } else if (hosts_mode == 2 && hosts_str != NULL && strlen(hosts_str) > 0) {
+        size_t hlen = strlen(hosts_str) + 2;
+        char *harg = malloc(hlen);
+        if (harg != NULL) {
+            snprintf(harg, hlen, ":%s", hosts_str);
+            add_arg(&argv, &argc, &capacity, "-H");
+            add_arg(&argv, &argc, &capacity, harg);
+            free(harg);
+        }
+    }
+
+    // Protocol whitelist
+    char proto_buf[16] = {0};
+    if (desync_https || desync_http || desync_udp) {
+        if (!(desync_https && desync_http && desync_udp)) {
+            int pidx = 0;
+            if (desync_https) {
+                proto_buf[pidx++] = 't';
+            }
+            if (desync_http) {
+                if (pidx > 0) {
+                    proto_buf[pidx++] = ',';
                 }
-                end = optarg;
-                while (end && !invalid) {
-                    switch (*end) {
-                        case 't':
-                            dp->detect |= DETECT_TORST;
-                            break;
-                        case 'r':
-                            dp->detect |= DETECT_HTTP_LOCAT;
-                            break;
-                        case 'a':
-                        case 's':
-                            dp->detect |= DETECT_TLS_ERR;
-                            break;
-                        case 'n':
-                            break;
-                        default:
-                            invalid = 1;
-                            continue;
-                    }
-                    end = strchr(end, ',');
-                    if (end) end++;
+                proto_buf[pidx++] = 'h';
+            }
+            if (desync_udp) {
+                if (pidx > 0) {
+                    proto_buf[pidx++] = ',';
                 }
-                break;
+                proto_buf[pidx++] = 'u';
+            }
+            proto_buf[pidx] = '\0';
+            add_arg(&argv, &argc, &capacity, "-K");
+            add_arg(&argv, &argc, &capacity, proto_buf);
+        }
+    }
 
-            case 'u':
-                val = strtol(optarg, &end, 0);
-                if (val <= 0 || *end)
-                    invalid = 1;
-                else
-                    params.cache_ttl = val;
-                break;
+    // Desync method and position
+    if (desync_method > 0 && desync_method <= 5) {
+        const char *flag_suffix = "";
+        if (split_at_host) {
+            if (desync_https || !desync_http) {
+                flag_suffix = "+s";
+            } else {
+                flag_suffix = "+h";
+            }
+        }
+        char pos_buf[32];
+        snprintf(pos_buf, sizeof(pos_buf), "%d%s", split_position, flag_suffix);
 
-            case 'T':;
-#ifdef __linux__
-                float f = strtof(optarg, &end);
-                val = (long)(f * 1000);
-#else
-                val = strtol(optarg, &end, 0);
-#endif
-                if (val <= 0 || val > UINT_MAX || *end)
-                    invalid = 1;
-                else
-                    params.timeout = val;
+        const char *m_flag = NULL;
+        switch (desync_method) {
+            case 1:
+                m_flag = "-s";
                 break;
-
-            case 'K':
-                end = optarg;
-                while (end && !invalid) {
-                    switch (*end) {
-                        case 't':
-                            dp->proto |= IS_HTTPS;
-                            break;
-                        case 'h':
-                            dp->proto |= IS_HTTP;
-                            break;
-                        case 'u':
-                            dp->proto |= IS_UDP;
-                            break;
-                        default:
-                            invalid = 1;
-                            continue;
-                    }
-                    end = strchr(end, ',');
-                    if (end) end++;
-                }
+            case 2:
+                m_flag = "-d";
                 break;
-
-            case 'H':;
-                if (dp->file_ptr) {
-                    continue;
-                }
-                dp->file_ptr = ftob(optarg, &dp->file_size);
-                if (!dp->file_ptr) {
-                    uniperror("read/parse");
-                    invalid = 1;
-                    continue;
-                }
-                dp->hosts = parse_hosts(dp->file_ptr, dp->file_size);
-                if (!dp->hosts) {
-                    perror("parse_hosts");
-                    reset_params();
-                    return -1;
-                }
+            case 3:
+                m_flag = "-f";
                 break;
-
-            case 's':
-            case 'd':
-            case 'o':
-            case 'q':
-            case 'f':
-                ;
-                struct part *part = add((void *)&dp->parts,
-                                        &dp->parts_n, sizeof(struct part));
-                if (!part) {
-                    reset_params();
-                    return -1;
-                }
-                if (parse_offset(part, optarg)) {
-                    invalid = 1;
-                    break;
-                }
-                switch (rez) {
-                    case 's': part->m = DESYNC_SPLIT;
-                        break;
-                    case 'd': part->m = DESYNC_DISORDER;
-                        break;
-                    case 'o': part->m = DESYNC_OOB;
-                        break;
-                    case 'q': part->m = DESYNC_DISOOB;
-                        break;
-                    case 'f': part->m = DESYNC_FAKE;
-                }
+            case 4:
+                m_flag = "-o";
                 break;
-
-            case 't':
-                val = strtol(optarg, &end, 0);
-                if (val <= 0 || val > 255 || *end)
-                    invalid = 1;
-                else
-                    dp->ttl = val;
+            case 5:
+                m_flag = "-q";
                 break;
-
-            case 'k':
-                if (dp->ip_options) {
-                    continue;
-                }
-                if (optarg)
-                    dp->ip_options = ftob(optarg, &dp->ip_options_len);
-                else {
-                    dp->ip_options = ip_option;
-                    dp->ip_options_len = sizeof(ip_option);
-                }
-                if (!dp->ip_options) {
-                    uniperror("read/parse");
-                    invalid = 1;
-                }
-                break;
-
-            case 'S':
-                dp->md5sig = 1;
-                break;
-
-            case 'O':
-                val = strtol(optarg, &end, 0);
-                if (val <= 0 || *end)
-                    invalid = 1;
-                else
-                    dp->fake_offset = val;
-                break;
-
-            case 'n':
-                if (change_tls_sni(optarg, fake_tls.data, fake_tls.size)) {
-                    perror("change_tls_sni");
-                    reset_params();
-                    return -1;
-                }
-                LOG(LOG_S, "sni: %s", optarg);
-                break;
-
-            case 'l':
-                if (dp->fake_data.data) {
-                    continue;
-                }
-                dp->fake_data.data = ftob(optarg, &dp->fake_data.size);
-                if (!dp->fake_data.data) {
-                    uniperror("read/parse");
-                    invalid = 1;
-                }
-                break;
-
-            case 'e':
-                val = parse_cform(dp->oob_char, 1, optarg, strlen(optarg));
-                if (val != 1) {
-                    invalid = 1;
-                }
-                else dp->oob_char[1] = 1;
-                break;
-
-            case 'M':
-                end = optarg;
-                while (end && !invalid) {
-                    switch (*end) {
-                        case 'r':
-                            dp->mod_http |= MH_SPACE;
-                            break;
-                        case 'h':
-                            dp->mod_http |= MH_HMIX;
-                            break;
-                        case 'd':
-                            dp->mod_http |= MH_DMIX;
-                            break;
-                        default:
-                            invalid = 1;
-                            continue;
-                    }
-                    end = strchr(end, ',');
-                    if (end) end++;
-                }
-                break;
-
-            case 'r':
-                part = add((void *)&dp->tlsrec,
-                           &dp->tlsrec_n, sizeof(struct part));
-                if (!part) {
-                    reset_params();
-                    return -1;
-                }
-                if (parse_offset(part, optarg)
-                    || part->pos > 0xffff) {
-                    invalid = 1;
-                    break;
-                }
-                break;
-
-            case 'a':
-                val = strtol(optarg, &end, 0);
-                if (val < 0 || val > INT_MAX || *end)
-                    invalid = 1;
-                else
-                    dp->udp_fake_count = val;
-                break;
-
-            case 'V':
-                val = strtol(optarg, &end, 0);
-                if (val <= 0 || val > USHRT_MAX)
-                    invalid = 1;
-                else {
-                    dp->pf[0] = htons(val);
-                    if (*end == '-') {
-                        val = strtol(end + 1, &end, 0);
-                        if (val <= 0 || val > USHRT_MAX)
-                            invalid = 1;
-                    }
-                    if (*end)
-                        invalid = 1;
-                    else
-                        dp->pf[1] = htons(val);
-                }
-                break;
-
-            case 'g':
-                val = strtol(optarg, &end, 0);
-                if (val <= 0 || val > 255 || *end)
-                    invalid = 1;
-                else {
-                    params.def_ttl = val;
-                    params.custom_ttl = 1;
-                }
-                break;
-
-            case 'Y':
-                dp->drop_sack = 1;
-                break;
-
-            case 'w': //
-                params.sfdelay = strtol(optarg, &end, 0);
-                if (params.sfdelay < 0 || optarg == end
-                    || params.sfdelay >= 1000 || *end)
-                    invalid = 1;
-                break;
-
-            case 'W':
-                params.wait_send = 0;
-                break;
-#ifdef __linux__
-            case 'P':
-                params.protect_path = optarg;
-                break;
-#endif
-            case 0:
-                break;
-
-            case '?':
-                reset_params();
-                return -1;
-
             default:
-                LOG(LOG_S, "Unknown option: -%c", rez);
-                reset_params();
-                return -1;
+                break;
         }
-    }
-    if (invalid) {
-        LOG(LOG_S, "invalid value: -%c %s", rez, optarg);
-        reset_params();
-        return -1;
-    }
-    if (dp->hosts || dp->proto || dp->pf[0]) {
-        dp = add((void *)&params.dp,
-                 &params.dp_count, sizeof(struct desync_params));
-        if (!dp) {
-            reset_params();
-            return -1;
+        if (m_flag != NULL) {
+            add_arg(&argv, &argc, &capacity, m_flag);
+            add_arg(&argv, &argc, &capacity, pos_buf);
         }
     }
 
-    if (params.baddr.sin6_family != AF_INET6) {
-        params.ipv6 = 0;
-    }
-    if (!params.def_ttl) {
-        if ((params.def_ttl = get_default_ttl()) < 1) {
-            reset_params();
-            return -1;
+    // Fake options
+    if (desync_method == 3) {
+        if (fake_ttl > 0) {
+            char fttl_buf[16];
+            snprintf(fttl_buf, sizeof(fttl_buf), "%d", fake_ttl);
+            add_arg(&argv, &argc, &capacity, "-t");
+            add_arg(&argv, &argc, &capacity, fttl_buf);
+        }
+        if (fake_offset > 0) {
+            char foff_buf[16];
+            snprintf(foff_buf, sizeof(foff_buf), "%d", fake_offset);
+            add_arg(&argv, &argc, &capacity, "-O");
+            add_arg(&argv, &argc, &capacity, foff_buf);
+        }
+        const char *sni_str = (fake_sni != NULL) ? (*env)->GetStringUTFChars(env, fake_sni, 0) : NULL;
+        if (sni_str != NULL && strlen(sni_str) > 0) {
+            add_arg(&argv, &argc, &capacity, "-n");
+            add_arg(&argv, &argc, &capacity, sni_str);
+        }
+        if (sni_str != NULL) {
+            (*env)->ReleaseStringUTFChars(env, fake_sni, sni_str);
         }
     }
-    params.mempool = mem_pool(0);
-    if (!params.mempool) {
-        uniperror("mem_pool");
+
+    // Custom OOB char
+    if ((desync_method == 4 || desync_method == 5) && custom_oob_char != 0) {
+        char oob_buf[16];
+        snprintf(oob_buf, sizeof(oob_buf), "\\x%02x", (unsigned char)custom_oob_char);
+        add_arg(&argv, &argc, &capacity, "-e");
+        add_arg(&argv, &argc, &capacity, oob_buf);
+    }
+
+    // HTTP modifications
+    char mod_buf[16] = {0};
+    int midx = 0;
+    if (host_mixed_case) {
+        mod_buf[midx++] = 'h';
+    }
+    if (domain_mixed_case) {
+        if (midx > 0) {
+            mod_buf[midx++] = ',';
+        }
+        mod_buf[midx++] = 'd';
+    }
+    if (host_remove_spaces) {
+        if (midx > 0) {
+            mod_buf[midx++] = ',';
+        }
+        mod_buf[midx++] = 'r';
+    }
+    if (midx > 0) {
+        mod_buf[midx] = '\0';
+        add_arg(&argv, &argc, &capacity, "-M");
+        add_arg(&argv, &argc, &capacity, mod_buf);
+    }
+
+    // TLS record split
+    if (tls_record_split) {
+        const char *tls_flag = tls_record_split_at_sni ? "+s" : "";
+        char tls_buf[32];
+        snprintf(tls_buf, sizeof(tls_buf), "%d%s", tls_record_split_position, tls_flag);
+        add_arg(&argv, &argc, &capacity, "-r");
+        add_arg(&argv, &argc, &capacity, tls_buf);
+    }
+
+    // UDP fake count
+    if (udp_fake_count > 0) {
+        char ufake_buf[16];
+        snprintf(ufake_buf, sizeof(ufake_buf), "%d", udp_fake_count);
+        add_arg(&argv, &argc, &capacity, "-a");
+        add_arg(&argv, &argc, &capacity, ufake_buf);
+    }
+
+    // Drop SACK
+    if (drop_sack) {
+        add_arg(&argv, &argc, &capacity, "-Y");
+    }
+
+    // If whitelist or proto whitelist was specified, pass -A none at the end
+    if ((hosts_mode == 2 && hosts_str != NULL && strlen(hosts_str) > 0) || strlen(proto_buf) > 0) {
+        add_arg(&argv, &argc, &capacity, "-A");
+        add_arg(&argv, &argc, &capacity, "none");
+    }
+
+    if (hosts_str != NULL) {
+        (*env)->ReleaseStringUTFChars(env, hosts, hosts_str);
+    }
+
+    optind = 1;
+    optreset = 1;
+
+    int res = parse_args(argc, argv);
+    for (int i = 0; i < argc; i++) {
+        free(argv[i]);
+    }
+    free(argv);
+
+    if (res < 0) {
+        uniperror("parse_args");
         reset_params();
         return -1;
+    }
+
+    if (init() < 0) {
+        uniperror("init");
+        reset_params();
+        return -1;
+    }
+
+    int fd = listen_socket(&params.laddr);
+    if (fd < 0) {
+        uniperror("listen_socket");
+        reset_params();
+        return -1;
+    }
+    LOG(LOG_S, "listen_socket, fd: %d", fd);
+
+    return fd;
+}
+
+int stop_proxy_loop(int fd) {
+    if (fd < 0) {
+        return 0;
+    }
+
+    // 1. Shutdown listening socket to prevent new accepts and signal failure
+    shutdown(fd, SHUT_RDWR);
+
+    // 2. Connect to local port to wake up epoll_wait on listening socket
+    union sockaddr_u addr = params.laddr;
+    int family = addr.sa.sa_family;
+    if (family != AF_INET && family != AF_INET6) {
+        family = AF_INET;
+    }
+
+    int sock = socket(family, SOCK_STREAM, 0);
+    if (sock >= 0) {
+        int flags = fcntl(sock, F_GETFL, 0);
+        if (flags >= 0) {
+            fcntl(sock, F_SETFL, flags | O_NONBLOCK);
+        }
+        if (family == AF_INET) {
+            if (addr.in.sin_addr.s_addr == INADDR_ANY) {
+                addr.in.sin_addr.s_addr = inet_addr("127.0.0.1");
+            }
+            connect(sock, &addr.sa, sizeof(struct sockaddr_in));
+        } else {
+            connect(sock, &addr.sa, sizeof(struct sockaddr_in6));
+        }
+        close(sock);
     }
 
     return 0;
