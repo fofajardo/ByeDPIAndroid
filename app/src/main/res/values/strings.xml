@@ -38,7 +38,6 @@
     <string name="byedpi_tlsrec_at_sni_setting">Split TLS record at SNI</string>
     <string name="version">Version</string>
     <string name="source_code_link">Source code</string>
-    <string name="byedpi_readme_link">What does all of this mean?</string>
     <string name="failed_to_start">Failed to start %1$s</string>
     <string name="vpn_channel_name">VPN</string>
     <string name="proxy_channel_name">Proxy</string>
@@ -93,4 +92,5 @@
     <string name="byedpi_timeout_setting">Auto desync timeout</string>
     <string name="byedpi_auto_category">Auto Desync</string>
     <string name="byedpi_filter_category">Filters</string>
+    <string name="documentation">Documentation</string>
 </resources>
