@@ -40,6 +40,9 @@ fun MainSettingsScreen(
     var appTheme by remember(prefs) {
         mutableStateOf(prefs.getString("app_theme", "system") ?: "system")
     }
+    var amoledTheme by remember(prefs) {
+        mutableStateOf(prefs.getBoolean("amoled_theme", false))
+    }
     var byedpiMode by remember(prefs) {
         mutableStateOf(prefs.getString("byedpi_mode", "vpn") ?: "vpn")
     }
@@ -61,9 +64,9 @@ fun MainSettingsScreen(
 
     val isVpnMode = byedpiMode == "vpn"
     val generalCount = if (isVpnMode) {
-        5
+        6
     } else {
-        3
+        4
     }
 
     LazyColumn(modifier = modifier.fillMaxSize()) {
@@ -82,12 +85,22 @@ fun MainSettingsScreen(
                         MainActivity.applyAppTheme(newValue)
                     },
                 )
+                SwitchPreferenceItem(
+                    title = stringResource(R.string.amoled_theme_setting),
+                    checked = amoledTheme,
+                    index = 1,
+                    count = generalCount,
+                    onCheckedChange = { checked ->
+                        amoledTheme = checked
+                        prefs.edit { putBoolean("amoled_theme", checked) }
+                    },
+                )
                 ListPreferenceItem(
                     title = stringResource(R.string.mode_setting),
                     selectedValue = byedpiMode,
                     entries = stringArrayResource(R.array.byedpi_modes).toList(),
                     entryValues = stringArrayResource(R.array.byedpi_modes_entries).toList(),
-                    index = 1,
+                    index = 2,
                     count = generalCount,
                     onValueChange = { newValue ->
                         byedpiMode = newValue
@@ -97,7 +110,7 @@ fun MainSettingsScreen(
                 SwitchPreferenceItem(
                     title = stringResource(R.string.autostart_setting),
                     checked = autostart,
-                    index = 2,
+                    index = 3,
                     count = generalCount,
                     onCheckedChange = { checked ->
                         autostart = checked
@@ -108,7 +121,7 @@ fun MainSettingsScreen(
                     EditTextPreferenceItem(
                         title = stringResource(R.string.dbs_ip_setting),
                         value = dnsIp,
-                        index = 3,
+                        index = 4,
                         count = generalCount,
                         onValueChange = { newValue ->
                             dnsIp = newValue
@@ -119,7 +132,7 @@ fun MainSettingsScreen(
                     SwitchPreferenceItem(
                         title = stringResource(R.string.ipv6_setting),
                         checked = ipv6Enable,
-                        index = 4,
+                        index = 5,
                         count = generalCount,
                         onCheckedChange = { checked ->
                             ipv6Enable = checked

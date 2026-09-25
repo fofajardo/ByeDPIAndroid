@@ -13,10 +13,12 @@ import androidx.compose.runtime.SideEffect
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
+import androidx.compose.ui.graphics.Color
 
 @Composable
 fun ByeDpiTheme(
     appTheme: String = "system",
+    amoledTheme: Boolean = false,
     dynamicColor: Boolean = true,
     content: @Composable () -> Unit
 ) {
@@ -26,7 +28,7 @@ fun ByeDpiTheme(
         else -> isSystemInDarkTheme()
     }
 
-    val colorScheme = when {
+    val baseColorScheme = when {
         dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
             val context = LocalContext.current
             if (darkTheme) {
@@ -37,6 +39,20 @@ fun ByeDpiTheme(
         }
         darkTheme -> darkColorScheme()
         else -> lightColorScheme()
+    }
+
+    val colorScheme = if (darkTheme && amoledTheme) {
+        baseColorScheme.copy(
+            background = Color.Black,
+            surface = Color.Black,
+            surfaceContainer = Color.Black,
+            surfaceContainerLow = Color.Black,
+            surfaceContainerLowest = Color.Black,
+            surfaceContainerHigh = Color(0xFF121212),
+            surfaceContainerHighest = Color(0xFF1E1E1E),
+        )
+    } else {
+        baseColorScheme
     }
 
     val view = LocalView.current

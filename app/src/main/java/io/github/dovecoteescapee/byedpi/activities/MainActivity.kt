@@ -177,11 +177,17 @@ class MainActivity : ComponentActivity() {
             var appTheme by remember {
                 mutableStateOf(prefs.getString("app_theme", "system") ?: "system")
             }
+            var amoledTheme by remember {
+                mutableStateOf(prefs.getBoolean("amoled_theme", false))
+            }
 
             DisposableEffect(prefs) {
                 val listener = SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
                     if (key == "app_theme") {
                         appTheme = prefs.getString("app_theme", "system") ?: "system"
+                    }
+                    if (key == "amoled_theme") {
+                        amoledTheme = prefs.getBoolean("amoled_theme", false)
                     }
                 }
                 prefs.registerOnSharedPreferenceChangeListener(listener)
@@ -190,7 +196,7 @@ class MainActivity : ComponentActivity() {
                 }
             }
 
-            ByeDpiTheme(appTheme = appTheme) {
+            ByeDpiTheme(appTheme = appTheme, amoledTheme = amoledTheme) {
                 var menuExpanded by remember { mutableStateOf(false) }
 
                 Scaffold(

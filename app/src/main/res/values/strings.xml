@@ -18,6 +18,7 @@
     <string name="logs_failed">Failed to collect logs</string>
     <string name="proxy_address">%1$s:%2$s</string>
     <string name="theme_settings">Theme</string>
+    <string name="amoled_theme_setting">Use pure black (AMOLED)</string>
     <string name="mode_setting">Mode</string>
     <string name="dbs_ip_setting">DNS</string>
     <string name="bye_dpi_proxy_ip_setting">Listen address</string>
