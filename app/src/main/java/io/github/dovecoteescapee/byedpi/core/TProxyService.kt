@@ -6,10 +6,13 @@ object TProxyService {
     }
 
     @JvmStatic
-    external fun TProxyStartService(configPath: String, fd: Int)
+    external fun TProxyStartService(configPath: String, fd: Int): Boolean
 
     @JvmStatic
-    external fun TProxyStopService()
+    external fun TProxyIsRunning(): Boolean
+
+    @JvmStatic
+    external fun TProxyStopService(): Boolean
 
     @JvmStatic
     @Suppress("unused")
