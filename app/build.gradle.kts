@@ -1,16 +1,17 @@
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+
 plugins {
     id("com.android.application")
-    id("org.jetbrains.kotlin.android")
     id("org.jetbrains.kotlin.plugin.compose")
 }
 
 android {
     namespace = "io.github.dovecoteescapee.byedpi"
-    compileSdk = 35
+    compileSdk = 37
 
     defaultConfig {
         applicationId = "io.github.dovecoteescapee.byedpi"
-        minSdk = 21
+        minSdk = 23
         targetSdk = 35
         versionCode = 10
         versionName = "1.2.0"
@@ -44,9 +45,6 @@ android {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
-    kotlinOptions {
-        jvmTarget = "17"
-    }
     externalNativeBuild {
         cmake {
             path = file("src/main/cpp/CMakeLists.txt")
@@ -67,13 +65,11 @@ android {
 }
 
 dependencies {
-    val composeBom = platform("androidx.compose:compose-bom:2024.12.01")
-    implementation(composeBom)
-    implementation("androidx.compose.ui:ui")
-    implementation("androidx.compose.material3:material3")
-    implementation("androidx.compose.ui:ui-tooling-preview")
+    implementation("com.github.alorma.compose-settings:ui-tiles-expressive:3.2.0")
+
     implementation("androidx.activity:activity-compose:1.9.3")
-    debugImplementation("androidx.compose.ui:ui-tooling")
+    implementation("androidx.compose.material:material-icons-core:1.7.6")
+    implementation("androidx.compose.material3:material3:1.3.1")
 
     implementation("androidx.core:core-ktx:1.15.0")
     implementation("androidx.appcompat:appcompat:1.7.0")
@@ -85,10 +81,16 @@ dependencies {
     androidTestImplementation("androidx.test.espresso:espresso-core:3.6.1")
 }
 
+kotlin {
+    compilerOptions {
+        jvmTarget.set(JvmTarget.JVM_17)
+    }
+}
+
 tasks.register<Exec>("runNdkBuild") {
     group = "build"
 
-    val ndkDir = android.ndkDirectory
+    val ndkDir = androidComponents.sdkComponents.ndkDirectory.get().asFile.absolutePath
     executable = if (System.getProperty("os.name").startsWith("Windows", ignoreCase = true)) {
         "$ndkDir\\ndk-build.cmd"
     } else {
