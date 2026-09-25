@@ -1,5 +1,5 @@
 <resources>
-    <string name="byedpi_docs">https://github.com/hufrea/byedpi/blob/v0.13/README.md</string>
+    <string name="byedpi_docs">https://github.com/hufrea/byedpi/blob/master/README.md</string>
     <string name="app_name">ByeDPI</string>
     <string name="vpn_connect">Connect</string>
     <string name="vpn_disconnect">Disconnect</string>
@@ -77,4 +77,20 @@
     <string name="vpn_filter_mode">Apps filtering mode</string>
     <string name="vpn_filtered_apps">Filtered applications</string>
     <string name="search">Search</string>
+    <string name="byedpi_md5sig_setting">MD5 Signature</string>
+    <string name="byedpi_fake_data_setting">Custom fake data</string>
+    <string name="byedpi_fake_tls_mod_setting">Fake TLS modification</string>
+    <string name="byedpi_tlsminor_setting">TLS minor version</string>
+    <string name="byedpi_no_ipv6_setting">Disable IPv6</string>
+    <string name="byedpi_conn_ip_setting">Outgoing bind IP</string>
+    <string name="byedpi_await_int_setting">Connection wait interval (sec)</string>
+    <string name="byedpi_wait_send_setting">Wait send</string>
+    <string name="byedpi_round_setting">Desync request round</string>
+    <string name="byedpi_pf_setting">Port whitelist</string>
+    <string name="byedpi_ipset_setting">IP whitelist</string>
+    <string name="byedpi_auto_setting">Auto desync detect</string>
+    <string name="byedpi_auto_mode_setting">Auto desync mode</string>
+    <string name="byedpi_timeout_setting">Auto desync timeout</string>
+    <string name="byedpi_auto_category">Auto Desync</string>
+    <string name="byedpi_filter_category">Filters</string>
 </resources>

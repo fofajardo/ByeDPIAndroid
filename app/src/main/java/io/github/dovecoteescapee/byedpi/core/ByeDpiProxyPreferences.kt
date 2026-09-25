@@ -61,6 +61,20 @@ class ByeDpiProxyUIPreferences(
     udpFakeCount: Int? = null,
     dropSack: Boolean? = null,
     byedpiFakeOffset: Int? = null,
+    noIpv6: Boolean? = null,
+    connIp: String? = null,
+    waitSend: Boolean? = null,
+    awaitInt: Int? = null,
+    md5sig: Boolean? = null,
+    fakeData: String? = null,
+    fakeTlsMod: String? = null,
+    tlsminor: Int? = null,
+    round: String? = null,
+    pf: String? = null,
+    ipset: String? = null,
+    auto: String? = null,
+    autoMode: String? = null,
+    timeout: String? = null,
 ) : ByeDpiProxyPreferences {
     val ip: String = ip ?: "127.0.0.1"
     val port: Int = port ?: 1080
@@ -85,15 +99,29 @@ class ByeDpiProxyUIPreferences(
     val tlsRecordSplitPosition: Int = tlsRecordSplitPosition ?: 0
     val tlsRecordSplitAtSni: Boolean = tlsRecordSplitAtSni ?: false
     val hostsMode: HostsMode =
-        if (hosts?.isBlank() != false) HostsMode.Disable
-        else hostsMode ?: HostsMode.Disable
+        if (hosts?.isBlank() != false) { HostsMode.Disable }
+        else { hostsMode ?: HostsMode.Disable }
     val hosts: String? =
-        if (this.hostsMode == HostsMode.Disable) null
-        else hosts?.trim()
+        if (this.hostsMode == HostsMode.Disable) { null }
+        else { hosts?.trim() }
     val tcpFastOpen: Boolean = tcpFastOpen ?: false
     val udpFakeCount: Int = udpFakeCount ?: 0
     val dropSack: Boolean = dropSack ?: false
     val fakeOffset: Int = byedpiFakeOffset ?: 0
+    val noIpv6: Boolean = noIpv6 ?: false
+    val connIp: String? = connIp?.trim()?.ifBlank { null }
+    val waitSend: Boolean = waitSend ?: false
+    val awaitInt: Int = awaitInt ?: 0
+    val md5sig: Boolean = md5sig ?: false
+    val fakeData: String? = fakeData?.trim()?.ifBlank { null }
+    val fakeTlsMod: String? = fakeTlsMod?.trim()?.ifBlank { null }
+    val tlsminor: Int = tlsminor ?: -1
+    val round: String? = round?.trim()?.ifBlank { null }
+    val pf: String? = pf?.trim()?.ifBlank { null }
+    val ipset: String? = ipset?.trim()?.ifBlank { null }
+    val auto: String? = auto?.trim()?.ifBlank { null }
+    val autoMode: String? = autoMode?.trim()?.ifBlank { null }
+    val timeout: String? = timeout?.trim()?.ifBlank { null }
 
     constructor(preferences: SharedPreferences) : this(
         ip = preferences.getString("byedpi_proxy_ip", null),
@@ -132,6 +160,20 @@ class ByeDpiProxyUIPreferences(
         udpFakeCount = preferences.getString("byedpi_udp_fake_count", null)?.toIntOrNull(),
         dropSack = preferences.getBoolean("byedpi_drop_sack", false),
         byedpiFakeOffset = preferences.getString("byedpi_fake_offset", null)?.toIntOrNull(),
+        noIpv6 = preferences.getBoolean("byedpi_no_ipv6", false),
+        connIp = preferences.getString("byedpi_conn_ip", null),
+        waitSend = preferences.getBoolean("byedpi_wait_send", false),
+        awaitInt = preferences.getString("byedpi_await_int", null)?.toIntOrNull(),
+        md5sig = preferences.getBoolean("byedpi_md5sig", false),
+        fakeData = preferences.getString("byedpi_fake_data", null),
+        fakeTlsMod = preferences.getString("byedpi_fake_tls_mod", null),
+        tlsminor = preferences.getString("byedpi_tlsminor", null)?.toIntOrNull(),
+        round = preferences.getString("byedpi_round", null),
+        pf = preferences.getString("byedpi_pf", null),
+        ipset = preferences.getString("byedpi_ipset", null),
+        auto = preferences.getString("byedpi_auto", null),
+        autoMode = preferences.getString("byedpi_auto_mode", null),
+        timeout = preferences.getString("byedpi_timeout", null),
     )
 
     enum class DesyncMethod {

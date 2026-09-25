@@ -54,7 +54,21 @@ Java_io_github_dovecoteescapee_byedpi_core_ByeDpiProxy_jniCreateSocket(
         jboolean tfo,
         jint udp_fake_count,
         jboolean drop_sack,
-        jint fake_offset) {
+        jint fake_offset,
+        jboolean no_ipv6,
+        jstring conn_ip,
+        jboolean wait_send,
+        jint await_int,
+        jboolean md5sig,
+        jstring fake_data,
+        jstring fake_tls_mod,
+        jint tlsminor,
+        jstring round,
+        jstring pf,
+        jstring ipset,
+        jstring auto_val,
+        jstring auto_mode,
+        jstring timeout) {
     return create_socket_from_ui(
             env,
             ip,
@@ -84,7 +98,21 @@ Java_io_github_dovecoteescapee_byedpi_core_ByeDpiProxy_jniCreateSocket(
             tfo,
             udp_fake_count,
             drop_sack,
-            fake_offset);
+            fake_offset,
+            no_ipv6,
+            conn_ip,
+            wait_send,
+            await_int,
+            md5sig,
+            fake_data,
+            fake_tls_mod,
+            tlsminor,
+            round,
+            pf,
+            ipset,
+            auto_val,
+            auto_mode,
+            timeout);
 }
 
 JNIEXPORT jint JNICALL

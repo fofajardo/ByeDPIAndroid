@@ -48,6 +48,27 @@
             android:defaultValue="false" />
 
         <CheckBoxPreference
+            android:key="byedpi_no_ipv6"
+            android:title="@string/byedpi_no_ipv6_setting"
+            android:defaultValue="false" />
+
+        <com.takisoft.preferencex.EditTextPreference
+            android:key="byedpi_conn_ip"
+            android:title="@string/byedpi_conn_ip_setting"
+            app:useSimpleSummaryProvider="true" />
+
+        <CheckBoxPreference
+            android:key="byedpi_wait_send"
+            android:title="@string/byedpi_wait_send_setting"
+            android:defaultValue="false" />
+
+        <com.takisoft.preferencex.EditTextPreference
+            android:key="byedpi_await_int"
+            android:title="@string/byedpi_await_int_setting"
+            android:inputType="number"
+            app:useSimpleSummaryProvider="true" />
+
+        <CheckBoxPreference
             android:key="byedpi_tcp_fast_open"
             android:title="@string/byedpi_tcp_fast_open_setting"
             android:defaultValue="false" />
@@ -131,6 +152,33 @@
             android:defaultValue="www.iana.org"
             app:useSimpleSummaryProvider="true" />
 
+        <CheckBoxPreference
+            android:key="byedpi_md5sig"
+            android:title="@string/byedpi_md5sig_setting"
+            android:defaultValue="false" />
+
+        <com.takisoft.preferencex.EditTextPreference
+            android:key="byedpi_fake_data"
+            android:title="@string/byedpi_fake_data_setting"
+            android:inputType="textMultiLine"
+            app:useSimpleSummaryProvider="true" />
+
+        <com.takisoft.preferencex.EditTextPreference
+            android:key="byedpi_fake_tls_mod"
+            android:title="@string/byedpi_fake_tls_mod_setting"
+            app:useSimpleSummaryProvider="true" />
+
+        <com.takisoft.preferencex.EditTextPreference
+            android:key="byedpi_tlsminor"
+            android:title="@string/byedpi_tlsminor_setting"
+            android:inputType="number"
+            app:useSimpleSummaryProvider="true" />
+
+        <com.takisoft.preferencex.EditTextPreference
+            android:key="byedpi_round"
+            android:title="@string/byedpi_round_setting"
+            app:useSimpleSummaryProvider="true" />
+
         <com.takisoft.preferencex.EditTextPreference
             android:key="byedpi_oob_data"
             android:title="@string/oob_data"
@@ -210,6 +258,44 @@
             android:title="@string/byedpi_udp_fake_count"
             android:inputType="number"
             android:defaultValue="0"
+            app:useSimpleSummaryProvider="true" />
+
+    </androidx.preference.PreferenceCategory>
+
+    <androidx.preference.PreferenceCategory
+        android:title="@string/byedpi_filter_category">
+
+        <com.takisoft.preferencex.EditTextPreference
+            android:key="byedpi_pf"
+            android:title="@string/byedpi_pf_setting"
+            app:useSimpleSummaryProvider="true" />
+
+        <com.takisoft.preferencex.EditTextPreference
+            android:key="byedpi_ipset"
+            android:title="@string/byedpi_ipset_setting"
+            android:inputType="textMultiLine"
+            app:useSimpleSummaryProvider="true" />
+
+    </androidx.preference.PreferenceCategory>
+
+    <androidx.preference.PreferenceCategory
+        android:title="@string/byedpi_auto_category">
+
+        <com.takisoft.preferencex.EditTextPreference
+            android:key="byedpi_auto"
+            android:title="@string/byedpi_auto_setting"
+            app:useSimpleSummaryProvider="true" />
+
+        <DropDownPreference
+            android:key="byedpi_auto_mode"
+            android:title="@string/byedpi_auto_mode_setting"
+            android:entries="@array/byedpi_auto_modes"
+            android:entryValues="@array/byedpi_auto_modes_entries"
+            app:useSimpleSummaryProvider="true" />
+
+        <com.takisoft.preferencex.EditTextPreference
+            android:key="byedpi_timeout"
+            android:title="@string/byedpi_timeout_setting"
             app:useSimpleSummaryProvider="true" />
 
     </androidx.preference.PreferenceCategory>

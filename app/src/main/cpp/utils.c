@@ -112,7 +112,21 @@ int create_socket_from_ui(
         jboolean tfo,
         jint udp_fake_count,
         jboolean drop_sack,
-        jint fake_offset) {
+        jint fake_offset,
+        jboolean no_ipv6,
+        jstring conn_ip,
+        jboolean wait_send,
+        jint await_int,
+        jboolean md5sig,
+        jstring fake_data,
+        jstring fake_tls_mod,
+        jint tlsminor,
+        jstring round,
+        jstring pf,
+        jstring ipset,
+        jstring auto_val,
+        jstring auto_mode,
+        jstring timeout) {
     int capacity = 64;
     int argc = 0;
     char **argv = malloc(sizeof(char *) * capacity);
@@ -166,6 +180,36 @@ int create_socket_from_ui(
     // No domain
     if (no_domain) {
         add_arg(&argv, &argc, &capacity, "-N");
+    }
+
+    // No IPv6
+    if (no_ipv6) {
+        add_arg(&argv, &argc, &capacity, "-X");
+    }
+
+    // Connection bind IP
+    if (conn_ip != NULL) {
+        const char *cip_str = (*env)->GetStringUTFChars(env, conn_ip, 0);
+        if (cip_str != NULL && strlen(cip_str) > 0) {
+            add_arg(&argv, &argc, &capacity, "-I");
+            add_arg(&argv, &argc, &capacity, cip_str);
+        }
+        if (cip_str != NULL) {
+            (*env)->ReleaseStringUTFChars(env, conn_ip, cip_str);
+        }
+    }
+
+    // Wait send
+    if (wait_send) {
+        add_arg(&argv, &argc, &capacity, "-Z");
+    }
+
+    // Await interval
+    if (await_int > 0) {
+        char aw_buf[16];
+        snprintf(aw_buf, sizeof(aw_buf), "%d", await_int);
+        add_arg(&argv, &argc, &capacity, "-W");
+        add_arg(&argv, &argc, &capacity, aw_buf);
     }
 
     // TFO
@@ -280,6 +324,35 @@ int create_socket_from_ui(
             add_arg(&argv, &argc, &capacity, "-O");
             add_arg(&argv, &argc, &capacity, foff_buf);
         }
+        if (md5sig) {
+            add_arg(&argv, &argc, &capacity, "-S");
+        }
+        if (fake_data != NULL) {
+            const char *fdata_str = (*env)->GetStringUTFChars(env, fake_data, 0);
+            if (fdata_str != NULL && strlen(fdata_str) > 0) {
+                add_arg(&argv, &argc, &capacity, "-l");
+                add_arg(&argv, &argc, &capacity, fdata_str);
+            }
+            if (fdata_str != NULL) {
+                (*env)->ReleaseStringUTFChars(env, fake_data, fdata_str);
+            }
+        }
+        if (fake_tls_mod != NULL) {
+            const char *ftls_str = (*env)->GetStringUTFChars(env, fake_tls_mod, 0);
+            if (ftls_str != NULL && strlen(ftls_str) > 0) {
+                add_arg(&argv, &argc, &capacity, "-Q");
+                add_arg(&argv, &argc, &capacity, ftls_str);
+            }
+            if (ftls_str != NULL) {
+                (*env)->ReleaseStringUTFChars(env, fake_tls_mod, ftls_str);
+            }
+        }
+        if (tlsminor >= 0) {
+            char tmin_buf[16];
+            snprintf(tmin_buf, sizeof(tmin_buf), "%d", tlsminor);
+            add_arg(&argv, &argc, &capacity, "-m");
+            add_arg(&argv, &argc, &capacity, tmin_buf);
+        }
         const char *sni_str = (fake_sni != NULL) ? (*env)->GetStringUTFChars(env, fake_sni, 0) : NULL;
         if (sni_str != NULL && strlen(sni_str) > 0) {
             add_arg(&argv, &argc, &capacity, "-n");
@@ -344,8 +417,86 @@ int create_socket_from_ui(
         add_arg(&argv, &argc, &capacity, "-Y");
     }
 
-    // If whitelist or proto whitelist was specified, pass -A none at the end
-    if ((hosts_mode == 2 && hosts_str != NULL && strlen(hosts_str) > 0) || strlen(proto_buf) > 0) {
+    // Round
+    if (round != NULL) {
+        const char *rnd_str = (*env)->GetStringUTFChars(env, round, 0);
+        if (rnd_str != NULL && strlen(rnd_str) > 0) {
+            add_arg(&argv, &argc, &capacity, "-R");
+            add_arg(&argv, &argc, &capacity, rnd_str);
+        }
+        if (rnd_str != NULL) {
+            (*env)->ReleaseStringUTFChars(env, round, rnd_str);
+        }
+    }
+
+    // Port whitelist
+    if (pf != NULL) {
+        const char *pf_str = (*env)->GetStringUTFChars(env, pf, 0);
+        if (pf_str != NULL && strlen(pf_str) > 0) {
+            add_arg(&argv, &argc, &capacity, "-V");
+            add_arg(&argv, &argc, &capacity, pf_str);
+        }
+        if (pf_str != NULL) {
+            (*env)->ReleaseStringUTFChars(env, pf, pf_str);
+        }
+    }
+
+    // IP whitelist
+    if (ipset != NULL) {
+        const char *ips_str = (*env)->GetStringUTFChars(env, ipset, 0);
+        if (ips_str != NULL && strlen(ips_str) > 0) {
+            size_t ilen = strlen(ips_str) + 2;
+            char *iarg = malloc(ilen);
+            if (iarg != NULL) {
+                snprintf(iarg, ilen, ":%s", ips_str);
+                add_arg(&argv, &argc, &capacity, "-j");
+                add_arg(&argv, &argc, &capacity, iarg);
+                free(iarg);
+            }
+        }
+        if (ips_str != NULL) {
+            (*env)->ReleaseStringUTFChars(env, ipset, ips_str);
+        }
+    }
+
+    // Auto desync
+    if (auto_val != NULL) {
+        const char *auto_str = (*env)->GetStringUTFChars(env, auto_val, 0);
+        if (auto_str != NULL && strlen(auto_str) > 0) {
+            add_arg(&argv, &argc, &capacity, "-A");
+            add_arg(&argv, &argc, &capacity, auto_str);
+        }
+        if (auto_str != NULL) {
+            (*env)->ReleaseStringUTFChars(env, auto_val, auto_str);
+        }
+    }
+
+    // Auto mode
+    if (auto_mode != NULL) {
+        const char *amode_str = (*env)->GetStringUTFChars(env, auto_mode, 0);
+        if (amode_str != NULL && strlen(amode_str) > 0) {
+            add_arg(&argv, &argc, &capacity, "-L");
+            add_arg(&argv, &argc, &capacity, amode_str);
+        }
+        if (amode_str != NULL) {
+            (*env)->ReleaseStringUTFChars(env, auto_mode, amode_str);
+        }
+    }
+
+    // Timeout
+    if (timeout != NULL) {
+        const char *to_str = (*env)->GetStringUTFChars(env, timeout, 0);
+        if (to_str != NULL && strlen(to_str) > 0) {
+            add_arg(&argv, &argc, &capacity, "-T");
+            add_arg(&argv, &argc, &capacity, to_str);
+        }
+        if (to_str != NULL) {
+            (*env)->ReleaseStringUTFChars(env, timeout, to_str);
+        }
+    }
+
+    // If whitelist or proto whitelist was specified and auto not already set, pass -A none at the end
+    if (auto_val == NULL && ((hosts_mode == 2 && hosts_str != NULL && strlen(hosts_str) > 0) || strlen(proto_buf) > 0)) {
         add_arg(&argv, &argc, &capacity, "-A");
         add_arg(&argv, &argc, &capacity, "none");
     }

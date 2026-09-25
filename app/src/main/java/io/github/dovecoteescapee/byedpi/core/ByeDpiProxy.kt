@@ -82,6 +82,20 @@ class ByeDpiProxy {
                 udpFakeCount = preferences.udpFakeCount,
                 dropSack = preferences.dropSack,
                 fakeOffset = preferences.fakeOffset,
+                noIpv6 = preferences.noIpv6,
+                connIp = preferences.connIp,
+                waitSend = preferences.waitSend,
+                awaitInt = preferences.awaitInt,
+                md5sig = preferences.md5sig,
+                fakeData = preferences.fakeData,
+                fakeTlsMod = preferences.fakeTlsMod,
+                tlsminor = preferences.tlsminor,
+                round = preferences.round,
+                pf = preferences.pf,
+                ipset = preferences.ipset,
+                auto = preferences.auto,
+                autoMode = preferences.autoMode,
+                timeout = preferences.timeout,
             )
         }
 
@@ -116,6 +130,20 @@ class ByeDpiProxy {
         udpFakeCount: Int,
         dropSack: Boolean,
         fakeOffset: Int,
+        noIpv6: Boolean,
+        connIp: String?,
+        waitSend: Boolean,
+        awaitInt: Int,
+        md5sig: Boolean,
+        fakeData: String?,
+        fakeTlsMod: String?,
+        tlsminor: Int,
+        round: String?,
+        pf: String?,
+        ipset: String?,
+        auto: String?,
+        autoMode: String?,
+        timeout: String?,
     ): Int
 
     private external fun jniStartProxy(fd: Int): Int

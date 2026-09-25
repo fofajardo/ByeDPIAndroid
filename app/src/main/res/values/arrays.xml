@@ -56,4 +56,15 @@
         <item name="blacklist">blacklist</item>
         <item name="whitelist">whitelist</item>
     </array>
+
+    <array name="byedpi_auto_modes">
+        <item name="swop">Swop</item>
+        <item name="onreconn">On reconnect</item>
+        <item name="noreconn">No reconnect</item>
+    </array>
+    <array name="byedpi_auto_modes_entries">
+        <item name="swop">swop</item>
+        <item name="onreconn">onreconn</item>
+        <item name="noreconn">noreconn</item>
+    </array>
 </resources>

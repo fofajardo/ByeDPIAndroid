@@ -44,7 +44,21 @@ int create_socket_from_ui(
         jboolean tfo,
         jint udp_fake_count,
         jboolean drop_sack,
-        jint fake_offset);
+        jint fake_offset,
+        jboolean no_ipv6,
+        jstring conn_ip,
+        jboolean wait_send,
+        jint await_int,
+        jboolean md5sig,
+        jstring fake_data,
+        jstring fake_tls_mod,
+        jint tlsminor,
+        jstring round,
+        jstring pf,
+        jstring ipset,
+        jstring auto_val,
+        jstring auto_mode,
+        jstring timeout);
 
 int stop_proxy_loop(int fd);
 
