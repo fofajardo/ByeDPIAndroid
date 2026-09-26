@@ -24,7 +24,14 @@ import io.github.dovecoteescapee.byedpi.ui.components.Section
 import io.github.dovecoteescapee.byedpi.ui.components.SwitchPreferenceItem
 import io.github.dovecoteescapee.byedpi.ui.components.segmentedShapeBottom
 import io.github.dovecoteescapee.byedpi.ui.components.segmentedShapeTop
+import io.github.dovecoteescapee.byedpi.ui.fragments.ServiceActiveWarningCardFragment
 import io.github.dovecoteescapee.byedpi.utility.checkNotLocalIp
+
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.runtime.rememberCoroutineScope
+import io.github.dovecoteescapee.byedpi.utility.saveLogsToUri
+import kotlinx.coroutines.launch
 
 @Composable
 fun MainSettingsScreen(
@@ -35,13 +42,26 @@ fun MainSettingsScreen(
     modifier: Modifier = Modifier,
 ) {
     val context = LocalContext.current
+    val coroutineScope = rememberCoroutineScope()
     val isVpnMode = settings.mode == "vpn"
+
+    val saveLogsLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.CreateDocument("text/plain"),
+    ) { uri ->
+        if (uri != null) {
+            coroutineScope.launch {
+                saveLogsToUri(context, uri)
+            }
+        }
+    }
 
     Column(
         modifier = modifier
             .fillMaxSize()
             .verticalScroll(rememberScrollState()),
     ) {
+        ServiceActiveWarningCardFragment()
+
         Section(title = stringResource(R.string.appearance_category)) {
             ListPreferenceItem(
                 shapes = segmentedShapeTop(),
@@ -138,13 +158,19 @@ fun MainSettingsScreen(
             )
             PreferenceItem(
                 title = stringResource(R.string.source_code_link),
-                shapes = segmentedShapeBottom(),
                 onClick = {
                     val intent = Intent(
                         Intent.ACTION_VIEW,
                         Uri.parse("https://github.com/dovecoteescapee/ByeDPIAndroid"),
                     )
                     context.startActivity(intent)
+                },
+            )
+            PreferenceItem(
+                title = stringResource(R.string.save_logs),
+                shapes = segmentedShapeBottom(),
+                onClick = {
+                    saveLogsLauncher.launch("byedpi.log")
                 },
             )
         }

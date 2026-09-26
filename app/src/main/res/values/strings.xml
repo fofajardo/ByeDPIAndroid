@@ -123,4 +123,6 @@
     <string name="sync_from_visual">Sync from Visual</string>
     <string name="sync_from_cli">Sync from CLI</string>
     <string name="sync_applied">Settings synced</string>
+    <string name="service_active_warning_title">Service is currently active</string>
+    <string name="service_active_warning_message">Changes made to settings will take effect after reconnecting.</string>
 </resources>

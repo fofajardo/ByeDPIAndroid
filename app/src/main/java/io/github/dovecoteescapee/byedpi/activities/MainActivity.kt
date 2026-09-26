@@ -17,13 +17,9 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatDelegate
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.outlined.Settings
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -35,7 +31,6 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -55,9 +50,7 @@ import io.github.dovecoteescapee.byedpi.services.appStatus
 import io.github.dovecoteescapee.byedpi.ui.screens.MainScreen
 import io.github.dovecoteescapee.byedpi.ui.theme.ByeDpiTheme
 import io.github.dovecoteescapee.byedpi.utility.getSettingsRepository
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import java.io.IOException
 
 class MainActivity : ComponentActivity() {
     companion object {
@@ -71,18 +64,6 @@ class MainActivity : ComponentActivity() {
                 else -> AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM)
             }
         }
-
-        private fun collectLogs(): String? =
-            try {
-                Runtime
-                    .getRuntime()
-                    .exec("logcat *:D -d")
-                    .inputStream
-                    .bufferedReader()
-                    .use { it.readText() }
-            } catch (e: Exception) {
-                null
-            }
     }
 
     private var statusText by mutableStateOf("")
@@ -102,37 +83,6 @@ class MainActivity : ComponentActivity() {
                         Toast.LENGTH_SHORT,
                     ).show()
                 updateStatus()
-            }
-        }
-
-    private val logsRegister =
-        registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
-            lifecycleScope.launch(Dispatchers.IO) {
-                val logs = collectLogs()
-
-                if (logs == null) {
-                    Toast
-                        .makeText(
-                            this@MainActivity,
-                            R.string.logs_failed,
-                            Toast.LENGTH_SHORT,
-                        ).show()
-                } else {
-                    val uri =
-                        it.data?.data ?: run {
-                            Log.e(TAG, "No data in result")
-                            return@launch
-                        }
-                    contentResolver.openOutputStream(uri)?.use { outputStream ->
-                        try {
-                            outputStream.write(logs.toByteArray())
-                        } catch (e: IOException) {
-                            Log.e(TAG, "Failed to save logs", e)
-                        }
-                    } ?: run {
-                        Log.e(TAG, "Failed to open output stream")
-                    }
-                }
             }
         }
 
@@ -190,8 +140,6 @@ class MainActivity : ComponentActivity() {
             val settings by repository.settingsFlow.collectAsState(initial = AppSettings())
 
             ByeDpiTheme(appTheme = settings.theme, amoledTheme = settings.amoledTheme) {
-                var menuExpanded by remember { mutableStateOf(false) }
-
                 Scaffold(
                     topBar = {
                         TopAppBar(
@@ -199,52 +147,15 @@ class MainActivity : ComponentActivity() {
                             actions = {
                                 IconButton(
                                     onClick = {
-                                        val (status, _) = appStatus
-                                        if (status == AppStatus.Halted) {
-                                            val intent = Intent(this@MainActivity, SettingsActivity::class.java)
-                                            startActivity(intent)
-                                        } else {
-                                            Toast
-                                                .makeText(
-                                                    this@MainActivity,
-                                                    R.string.settings_unavailable,
-                                                    Toast.LENGTH_SHORT,
-                                                ).show()
-                                        }
+                                        val intent =
+                                            Intent(this@MainActivity, SettingsActivity::class.java)
+                                        startActivity(intent)
                                     },
                                 ) {
                                     Icon(
                                         imageVector = Icons.Outlined.Settings,
                                         contentDescription = stringResource(R.string.title_settings),
                                     )
-                                }
-
-                                Box {
-                                    IconButton(onClick = { menuExpanded = true }) {
-                                        Icon(
-                                            imageVector = Icons.Default.MoreVert,
-                                            contentDescription = "More options",
-                                        )
-                                    }
-
-                                    DropdownMenu(
-                                        expanded = menuExpanded,
-                                        onDismissRequest = { menuExpanded = false },
-                                    ) {
-                                        DropdownMenuItem(
-                                            text = { Text(stringResource(R.string.save_logs)) },
-                                            onClick = {
-                                                menuExpanded = false
-                                                val intent =
-                                                    Intent(Intent.ACTION_CREATE_DOCUMENT).apply {
-                                                        addCategory(Intent.CATEGORY_OPENABLE)
-                                                        type = "text/plain"
-                                                        putExtra(Intent.EXTRA_TITLE, "byedpi.log")
-                                                    }
-                                                logsRegister.launch(intent)
-                                            },
-                                        )
-                                    }
                                 }
                             },
                             colors =
