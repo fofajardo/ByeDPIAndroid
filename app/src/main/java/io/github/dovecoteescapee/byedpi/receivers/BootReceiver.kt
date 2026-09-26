@@ -24,7 +24,7 @@ class BootReceiver : BroadcastReceiver() {
 
         val prefs = context.getPreferences()
 
-        if (!prefs.getBoolean("autostart", false) || !prefs.getBoolean("was_running", false)) {
+        if (!prefs.getBoolean("autostart", false)) {
             return
         }
 
