@@ -67,4 +67,13 @@
         <item name="onreconn">onreconn</item>
         <item name="noreconn">noreconn</item>
     </array>
+
+    <array name="byedpi_editor_modes">
+        <item name="ui">Visual editor</item>
+        <item name="cmd">CLI editor</item>
+    </array>
+    <array name="byedpi_editor_modes_entries">
+        <item name="ui">ui</item>
+        <item name="cmd">cmd</item>
+    </array>
 </resources>

@@ -39,17 +39,15 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.core.content.edit
 import io.github.dovecoteescapee.byedpi.R
-import io.github.dovecoteescapee.byedpi.ui.screens.CmdSettingsScreen
+import io.github.dovecoteescapee.byedpi.ui.screens.EngineSettingsScreen
 import io.github.dovecoteescapee.byedpi.ui.screens.MainSettingsScreen
-import io.github.dovecoteescapee.byedpi.ui.screens.UiSettingsScreen
 import io.github.dovecoteescapee.byedpi.ui.screens.VpnAppsFilterScreen
 import io.github.dovecoteescapee.byedpi.ui.theme.ByeDpiTheme
 import io.github.dovecoteescapee.byedpi.utility.getPreferences
 
 enum class SettingsDestination {
     MAIN,
-    UI_SETTINGS,
-    CMD_SETTINGS,
+    ENGINE_SETTINGS,
     VPN_APPS_FILTER,
 }
 
@@ -103,19 +101,9 @@ fun SettingsApp(
     val navBackStack = remember { mutableStateListOf(SettingsDestination.MAIN) }
     val currentDestination = navBackStack.last()
 
-    // Preferences state tracker to trigger recomposition on preference changes or reset
+    // Preferences state tracker to trigger recomposition on preference reset
     var prefsEpoch by remember { mutableStateOf(0) }
     var showResetDialog by remember { mutableStateOf(false) }
-
-    DisposableEffect(prefs) {
-        val listener = SharedPreferences.OnSharedPreferenceChangeListener { _, _ ->
-            prefsEpoch++
-        }
-        prefs.registerOnSharedPreferenceChangeListener(listener)
-        onDispose {
-            prefs.unregisterOnSharedPreferenceChangeListener(listener)
-        }
-    }
 
     val navigateTo: (SettingsDestination) -> Unit = { dest ->
         navBackStack.add(dest)
@@ -135,8 +123,7 @@ fun SettingsApp(
 
     val title = when (currentDestination) {
         SettingsDestination.MAIN -> stringResource(R.string.title_settings)
-        SettingsDestination.UI_SETTINGS -> stringResource(R.string.ui_editor)
-        SettingsDestination.CMD_SETTINGS -> stringResource(R.string.command_line_editor)
+        SettingsDestination.ENGINE_SETTINGS -> stringResource(R.string.engine_settings)
         SettingsDestination.VPN_APPS_FILTER -> stringResource(R.string.vpn_filtered_apps)
     }
 
@@ -160,7 +147,7 @@ fun SettingsApp(
                                 contentDescription = stringResource(R.string.reset_settings),
                             )
                         }
-                    } else if (currentDestination == SettingsDestination.CMD_SETTINGS || currentDestination == SettingsDestination.UI_SETTINGS) {
+                    } else if (currentDestination == SettingsDestination.ENGINE_SETTINGS) {
                         val docsUrl = stringResource(R.string.byedpi_docs)
                         IconButton(
                             onClick = {
@@ -228,25 +215,14 @@ fun SettingsApp(
                     SettingsDestination.MAIN -> {
                         MainSettingsScreen(
                             prefs = prefs,
-                            onNavigateToUiSettings = { navigateTo(SettingsDestination.UI_SETTINGS) },
-                            onNavigateToCmdSettings = { navigateTo(SettingsDestination.CMD_SETTINGS) },
+                            onNavigateToEngineSettings = { navigateTo(SettingsDestination.ENGINE_SETTINGS) },
                             onNavigateToVpnAppsFilter = { navigateTo(SettingsDestination.VPN_APPS_FILTER) },
                         )
                     }
 
-                    SettingsDestination.UI_SETTINGS -> {
-                        UiSettingsScreen(
+                    SettingsDestination.ENGINE_SETTINGS -> {
+                        EngineSettingsScreen(
                             prefs = prefs,
-                        )
-                    }
-
-                    SettingsDestination.CMD_SETTINGS -> {
-                        val cmdArgs = prefs.getString("byedpi_cmd_args", "") ?: ""
-                        CmdSettingsScreen(
-                            cmdArgs = cmdArgs,
-                            onCmdArgsChange = { newArgs ->
-                                prefs.edit { putString("byedpi_cmd_args", newArgs) }
-                            },
                         )
                     }
 
