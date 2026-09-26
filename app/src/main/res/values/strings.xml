@@ -54,7 +54,6 @@
     <string name="proxy_notification_content">Proxy is running</string>
     <string name="appearance_category">Appearance</string>
     <string name="general_category">General</string>
-    <string name="byedpi_category">ByeDPI Engine</string>
     <string name="about_category">About</string>
     <string name="engine_settings">ByeDPI engine settings</string>
     <string name="editor_mode">Editor mode</string>

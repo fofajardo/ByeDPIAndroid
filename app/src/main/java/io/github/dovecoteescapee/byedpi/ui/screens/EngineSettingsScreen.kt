@@ -1,14 +1,18 @@
-@file:OptIn(androidx.compose.material3.ExperimentalMaterial3ExpressiveApi::class)
+@file:OptIn(ExperimentalMaterial3ExpressiveApi::class)
 
 package io.github.dovecoteescapee.byedpi.ui.screens
 
 import android.content.SharedPreferences
 import android.widget.Toast
-import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -26,12 +30,17 @@ import io.github.dovecoteescapee.byedpi.ui.components.Section
 import io.github.dovecoteescapee.byedpi.ui.components.segmentedShapeBottom
 import io.github.dovecoteescapee.byedpi.ui.components.segmentedShapeTop
 import io.github.dovecoteescapee.byedpi.ui.fragments.CmdSettingsScreen
-import io.github.dovecoteescapee.byedpi.ui.fragments.UiSettingsScreen
+import io.github.dovecoteescapee.byedpi.ui.fragments.VisualEngineSettingsScreen
 import io.github.dovecoteescapee.byedpi.utility.ByeDpiArgsConverter
 
 @Composable
 fun EngineSettingsScreen(
     prefs: SharedPreferences,
+    onNavigateToProxy: () -> Unit,
+    onNavigateToDesync: () -> Unit,
+    onNavigateToProtocols: () -> Unit,
+    onNavigateToFilters: () -> Unit,
+    onNavigateToAuto: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val context = LocalContext.current
@@ -50,8 +59,6 @@ fun EngineSettingsScreen(
     var cmdArgs by remember(prefs) {
         mutableStateOf(prefs.getString("byedpi_cmd_args", "") ?: "")
     }
-
-    var visualEpoch by remember { mutableStateOf(0) }
 
     val engineHeaderContent: @Composable ColumnScope.() -> Unit = {
         Section(
@@ -90,7 +97,6 @@ fun EngineSettingsScreen(
                     onClick = {
                         val currentCmd = prefs.getString("byedpi_cmd_args", "") ?: ""
                         ByeDpiArgsConverter.applyCmdArgsToUiPreferences(currentCmd, prefs)
-                        visualEpoch++
                         Toast.makeText(context, R.string.sync_applied, Toast.LENGTH_SHORT).show()
                     },
                 )
@@ -109,12 +115,14 @@ fun EngineSettingsScreen(
             modifier = modifier.fillMaxSize(),
         )
     } else {
-        androidx.compose.runtime.key(visualEpoch) {
-            UiSettingsScreen(
-                prefs = prefs,
-                headerContent = engineHeaderContent,
-                modifier = modifier.fillMaxSize(),
-            )
-        }
+        VisualEngineSettingsScreen(
+            onNavigateToProxy = onNavigateToProxy,
+            onNavigateToDesync = onNavigateToDesync,
+            onNavigateToProtocols = onNavigateToProtocols,
+            onNavigateToFilters = onNavigateToFilters,
+            onNavigateToAuto = onNavigateToAuto,
+            headerContent = engineHeaderContent,
+            modifier = modifier.fillMaxSize(),
+        )
     }
 }

@@ -42,12 +42,22 @@ import io.github.dovecoteescapee.byedpi.R
 import io.github.dovecoteescapee.byedpi.ui.screens.EngineSettingsScreen
 import io.github.dovecoteescapee.byedpi.ui.screens.MainSettingsScreen
 import io.github.dovecoteescapee.byedpi.ui.screens.VpnAppsFilterScreen
+import io.github.dovecoteescapee.byedpi.ui.screens.engine.AutoSettingsScreen
+import io.github.dovecoteescapee.byedpi.ui.screens.engine.DesyncTacticsSettingsScreen
+import io.github.dovecoteescapee.byedpi.ui.screens.engine.FiltersSettingsScreen
+import io.github.dovecoteescapee.byedpi.ui.screens.engine.ProtocolsSettingsScreen
+import io.github.dovecoteescapee.byedpi.ui.screens.engine.ProxyConnectionSettingsScreen
 import io.github.dovecoteescapee.byedpi.ui.theme.ByeDpiTheme
 import io.github.dovecoteescapee.byedpi.utility.getPreferences
 
 enum class SettingsDestination {
     MAIN,
     ENGINE_SETTINGS,
+    ENGINE_PROXY,
+    ENGINE_DESYNC,
+    ENGINE_PROTOCOLS,
+    ENGINE_FILTERS,
+    ENGINE_AUTO,
     VPN_APPS_FILTER,
 }
 
@@ -100,17 +110,20 @@ fun SettingsApp(
     val context = androidx.compose.ui.platform.LocalContext.current
     val navBackStack = remember { mutableStateListOf(SettingsDestination.MAIN) }
     val currentDestination = navBackStack.last()
+    var isPop by remember { mutableStateOf(false) }
 
     // Preferences state tracker to trigger recomposition on preference reset
     var prefsEpoch by remember { mutableStateOf(0) }
     var showResetDialog by remember { mutableStateOf(false) }
 
     val navigateTo: (SettingsDestination) -> Unit = { dest ->
+        isPop = false
         navBackStack.add(dest)
     }
 
     val navigateUp: () -> Unit = {
         if (navBackStack.size > 1) {
+            isPop = true
             navBackStack.removeAt(navBackStack.lastIndex)
         } else {
             onFinish()
@@ -124,6 +137,11 @@ fun SettingsApp(
     val title = when (currentDestination) {
         SettingsDestination.MAIN -> stringResource(R.string.title_settings)
         SettingsDestination.ENGINE_SETTINGS -> stringResource(R.string.engine_settings)
+        SettingsDestination.ENGINE_PROXY -> stringResource(R.string.byedpi_proxy)
+        SettingsDestination.ENGINE_DESYNC -> stringResource(R.string.byedpi_desync)
+        SettingsDestination.ENGINE_PROTOCOLS -> stringResource(R.string.byedpi_protocols_category)
+        SettingsDestination.ENGINE_FILTERS -> stringResource(R.string.byedpi_filter_category)
+        SettingsDestination.ENGINE_AUTO -> stringResource(R.string.byedpi_auto_category)
         SettingsDestination.VPN_APPS_FILTER -> stringResource(R.string.vpn_filtered_apps)
     }
 
@@ -195,13 +213,13 @@ fun SettingsApp(
         AnimatedContent(
             targetState = currentDestination,
             transitionSpec = {
-                if (navBackStack.size > 1) {
-                    (slideInHorizontally { width -> width } + fadeIn()).togetherWith(
-                        slideOutHorizontally { width -> -width } + fadeOut()
-                    )
-                } else {
+                if (isPop) {
                     (slideInHorizontally { width -> -width } + fadeIn()).togetherWith(
                         slideOutHorizontally { width -> width } + fadeOut()
+                    )
+                } else {
+                    (slideInHorizontally { width -> width } + fadeIn()).togetherWith(
+                        slideOutHorizontally { width -> -width } + fadeOut()
                     )
                 }
             },
@@ -223,7 +241,32 @@ fun SettingsApp(
                     SettingsDestination.ENGINE_SETTINGS -> {
                         EngineSettingsScreen(
                             prefs = prefs,
+                            onNavigateToProxy = { navigateTo(SettingsDestination.ENGINE_PROXY) },
+                            onNavigateToDesync = { navigateTo(SettingsDestination.ENGINE_DESYNC) },
+                            onNavigateToProtocols = { navigateTo(SettingsDestination.ENGINE_PROTOCOLS) },
+                            onNavigateToFilters = { navigateTo(SettingsDestination.ENGINE_FILTERS) },
+                            onNavigateToAuto = { navigateTo(SettingsDestination.ENGINE_AUTO) },
                         )
+                    }
+
+                    SettingsDestination.ENGINE_PROXY -> {
+                        ProxyConnectionSettingsScreen(prefs = prefs)
+                    }
+
+                    SettingsDestination.ENGINE_DESYNC -> {
+                        DesyncTacticsSettingsScreen(prefs = prefs)
+                    }
+
+                    SettingsDestination.ENGINE_PROTOCOLS -> {
+                        ProtocolsSettingsScreen(prefs = prefs)
+                    }
+
+                    SettingsDestination.ENGINE_FILTERS -> {
+                        FiltersSettingsScreen(prefs = prefs)
+                    }
+
+                    SettingsDestination.ENGINE_AUTO -> {
+                        AutoSettingsScreen(prefs = prefs)
                     }
 
                 SettingsDestination.VPN_APPS_FILTER -> {
