@@ -4,7 +4,6 @@ import android.content.SharedPreferences
 import androidx.core.content.edit
 
 object ByeDpiArgsConverter {
-
     fun uiPreferencesToCmdArgs(prefs: SharedPreferences): String {
         val args = mutableListOf<String>()
 
@@ -67,11 +66,12 @@ object ByeDpiArgsConverter {
         }
 
         val hostsMode = prefs.getString("byedpi_hosts_mode", "disable") ?: "disable"
-        val hosts = when (hostsMode) {
-            "blacklist" -> prefs.getString("byedpi_hosts_blacklist", "") ?: ""
-            "whitelist" -> prefs.getString("byedpi_hosts_whitelist", "") ?: ""
-            else -> ""
-        }
+        val hosts =
+            when (hostsMode) {
+                "blacklist" -> prefs.getString("byedpi_hosts_blacklist", "") ?: ""
+                "whitelist" -> prefs.getString("byedpi_hosts_whitelist", "") ?: ""
+                else -> ""
+            }
         if (hostsMode == "blacklist" && hosts.isNotBlank()) {
             args.add("-H")
             args.add(":$hosts")
@@ -107,15 +107,16 @@ object ByeDpiArgsConverter {
         val splitAtHost = prefs.getBoolean("byedpi_split_at_host", false)
 
         if (desyncMethod != "none") {
-            val suffix = if (splitAtHost) {
-                if (desyncHttps || !desyncHttp) {
-                    "+s"
+            val suffix =
+                if (splitAtHost) {
+                    if (desyncHttps || !desyncHttp) {
+                        "+s"
+                    } else {
+                        "+h"
+                    }
                 } else {
-                    "+h"
+                    ""
                 }
-            } else {
-                ""
-            }
             val posArg = "$splitPosition$suffix"
 
             when (desyncMethod) {
@@ -211,11 +212,12 @@ object ByeDpiArgsConverter {
         if (prefs.getBoolean("byedpi_tlsrec_enabled", false)) {
             val tlsPos = prefs.getString("byedpi_tlsrec_position", "0") ?: "0"
             val atSni = prefs.getBoolean("byedpi_tlsrec_at_sni", false)
-            val tlsArg = if (atSni) {
-                "$tlsPos+s"
-            } else {
-                tlsPos
-            }
+            val tlsArg =
+                if (atSni) {
+                    "$tlsPos+s"
+                } else {
+                    tlsPos
+                }
             args.add("-r")
             args.add(tlsArg)
         }
@@ -269,14 +271,18 @@ object ByeDpiArgsConverter {
         return args.joinToString(" ")
     }
 
-    fun applyCmdArgsToUiPreferences(argsStr: String, prefs: SharedPreferences) {
+    fun applyCmdArgsToUiPreferences(
+        argsStr: String,
+        prefs: SharedPreferences,
+    ) {
         val trimmed = argsStr.trim()
         val firstArgIndex = trimmed.indexOf("-")
-        val effectiveArgsStr = if (firstArgIndex >= 0) {
-            trimmed.substring(firstArgIndex)
-        } else {
-            trimmed
-        }
+        val effectiveArgsStr =
+            if (firstArgIndex >= 0) {
+                trimmed.substring(firstArgIndex)
+            } else {
+                trimmed
+            }
 
         val tokens = shellSplit(effectiveArgsStr)
         if (tokens.isEmpty()) {
@@ -356,21 +362,23 @@ object ByeDpiArgsConverter {
 
                 token == "-H" && i + 1 < tokens.size -> {
                     val raw = tokens[++i]
-                    val hostVal = if (raw.startsWith(":")) {
-                        raw.substring(1)
-                    } else {
-                        raw
-                    }
+                    val hostVal =
+                        if (raw.startsWith(":")) {
+                            raw.substring(1)
+                        } else {
+                            raw
+                        }
                     updates["byedpi_hosts_mode"] = "blacklist"
                     updates["byedpi_hosts_blacklist"] = hostVal
                 }
                 token.startsWith("-H") && token.length > 2 -> {
                     val raw = token.substring(2)
-                    val hostVal = if (raw.startsWith(":")) {
-                        raw.substring(1)
-                    } else {
-                        raw
-                    }
+                    val hostVal =
+                        if (raw.startsWith(":")) {
+                            raw.substring(1)
+                        } else {
+                            raw
+                        }
                     updates["byedpi_hosts_mode"] = "blacklist"
                     updates["byedpi_hosts_blacklist"] = hostVal
                 }
@@ -389,14 +397,15 @@ object ByeDpiArgsConverter {
                 }
 
                 token in listOf("-s", "-d", "-f", "-o", "-q") -> {
-                    val method = when (token) {
-                        "-s" -> "split"
-                        "-d" -> "disorder"
-                        "-f" -> "fake"
-                        "-o" -> "oob"
-                        "-q" -> "disoob"
-                        else -> "none"
-                    }
+                    val method =
+                        when (token) {
+                            "-s" -> "split"
+                            "-d" -> "disorder"
+                            "-f" -> "fake"
+                            "-o" -> "oob"
+                            "-q" -> "disoob"
+                            else -> "none"
+                        }
                     updates["byedpi_desync_method"] = method
                     if (i + 1 < tokens.size && !tokens[i + 1].startsWith("-")) {
                         val posStr = tokens[++i]
@@ -406,17 +415,25 @@ object ByeDpiArgsConverter {
                         updates["byedpi_split_at_host"] = isAtHost
                     }
                 }
-                token.length > 2 && (token.startsWith("-s") || token.startsWith("-d") || token.startsWith("-f") || token.startsWith("-o") || token.startsWith("-q")) -> {
+                token.length > 2 &&
+                    (
+                        token.startsWith("-s") ||
+                            token.startsWith("-d") ||
+                            token.startsWith("-f") ||
+                            token.startsWith("-o") ||
+                            token.startsWith("-q")
+                    ) -> {
                     val flag = token.substring(0, 2)
                     val posStr = token.substring(2)
-                    val method = when (flag) {
-                        "-s" -> "split"
-                        "-d" -> "disorder"
-                        "-f" -> "fake"
-                        "-o" -> "oob"
-                        "-q" -> "disoob"
-                        else -> "none"
-                    }
+                    val method =
+                        when (flag) {
+                            "-s" -> "split"
+                            "-d" -> "disorder"
+                            "-f" -> "fake"
+                            "-o" -> "oob"
+                            "-q" -> "disoob"
+                            else -> "none"
+                        }
                     updates["byedpi_desync_method"] = method
                     val isAtHost = posStr.endsWith("+s") || posStr.endsWith("+h")
                     val cleanPos = posStr.replace("+s", "").replace("+h", "")
@@ -536,19 +553,21 @@ object ByeDpiArgsConverter {
 
                 token == "-j" && i + 1 < tokens.size -> {
                     val raw = tokens[++i]
-                    updates["byedpi_ipset"] = if (raw.startsWith(":")) {
-                        raw.substring(1)
-                    } else {
-                        raw
-                    }
+                    updates["byedpi_ipset"] =
+                        if (raw.startsWith(":")) {
+                            raw.substring(1)
+                        } else {
+                            raw
+                        }
                 }
                 token.startsWith("-j") && token.length > 2 -> {
                     val raw = token.substring(2)
-                    updates["byedpi_ipset"] = if (raw.startsWith(":")) {
-                        raw.substring(1)
-                    } else {
-                        raw
-                    }
+                    updates["byedpi_ipset"] =
+                        if (raw.startsWith(":")) {
+                            raw.substring(1)
+                        } else {
+                            raw
+                        }
                 }
 
                 token == "-A" && i + 1 < tokens.size -> {

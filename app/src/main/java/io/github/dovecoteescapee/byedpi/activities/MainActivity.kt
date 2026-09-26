@@ -19,7 +19,6 @@ import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.MoreVert
@@ -34,14 +33,12 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
-import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.lifecycleScope
@@ -74,19 +71,22 @@ class MainActivity : ComponentActivity() {
         private val TAG: String = MainActivity::class.java.simpleName
 
         fun applyAppTheme(themeName: String) {
-            val mode = when (themeName) {
-                "light" -> AppCompatDelegate.MODE_NIGHT_NO
-                "dark" -> AppCompatDelegate.MODE_NIGHT_YES
-                else -> AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM
-            }
+            val mode =
+                when (themeName) {
+                    "light" -> AppCompatDelegate.MODE_NIGHT_NO
+                    "dark" -> AppCompatDelegate.MODE_NIGHT_YES
+                    else -> AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM
+                }
             AppCompatDelegate.setDefaultNightMode(mode)
         }
 
         private fun collectLogs(): String? =
             try {
-                Runtime.getRuntime()
+                Runtime
+                    .getRuntime()
                     .exec("logcat *:D -d")
-                    .inputStream.bufferedReader()
+                    .inputStream
+                    .bufferedReader()
                     .use { it.readText() }
             } catch (e: Exception) {
                 Log.e(TAG, "Failed to collect logs", e)
@@ -110,16 +110,18 @@ class MainActivity : ComponentActivity() {
                 val logs = collectLogs()
 
                 if (logs == null) {
-                    Toast.makeText(
-                        this@MainActivity,
-                        R.string.logs_failed,
-                        Toast.LENGTH_SHORT
-                    ).show()
+                    Toast
+                        .makeText(
+                            this@MainActivity,
+                            R.string.logs_failed,
+                            Toast.LENGTH_SHORT,
+                        ).show()
                 } else {
-                    val uri = it.data?.data ?: run {
-                        Log.e(TAG, "No data in result")
-                        return@launch
-                    }
+                    val uri =
+                        it.data?.data ?: run {
+                            Log.e(TAG, "No data in result")
+                            return@launch
+                        }
                     contentResolver.openOutputStream(uri)?.use { outputStream ->
                         try {
                             outputStream.write(logs.toByteArray())
@@ -133,39 +135,45 @@ class MainActivity : ComponentActivity() {
             }
         }
 
-    private val receiver = object : BroadcastReceiver() {
-        override fun onReceive(context: Context?, intent: Intent?) {
-            Log.d(TAG, "Received intent: ${intent?.action}")
+    private val receiver =
+        object : BroadcastReceiver() {
+            override fun onReceive(
+                context: Context?,
+                intent: Intent?,
+            ) {
+                Log.d(TAG, "Received intent: ${intent?.action}")
 
-            if (intent == null) {
-                Log.w(TAG, "Received null intent")
-                return
-            }
-
-            val senderOrd = intent.getIntExtra(SENDER, -1)
-            val sender = Sender.entries.getOrNull(senderOrd)
-            if (sender == null) {
-                Log.w(TAG, "Received intent with unknown sender: $senderOrd")
-                return
-            }
-
-            when (val action = intent.action) {
-                STARTED_BROADCAST,
-                STOPPED_BROADCAST -> updateStatus()
-
-                FAILED_BROADCAST -> {
-                    Toast.makeText(
-                        context,
-                        getString(R.string.failed_to_start, sender.name),
-                        Toast.LENGTH_SHORT,
-                    ).show()
-                    updateStatus()
+                if (intent == null) {
+                    Log.w(TAG, "Received null intent")
+                    return
                 }
 
-                else -> Log.w(TAG, "Unknown action: $action")
+                val senderOrd = intent.getIntExtra(SENDER, -1)
+                val sender = Sender.entries.getOrNull(senderOrd)
+                if (sender == null) {
+                    Log.w(TAG, "Received intent with unknown sender: $senderOrd")
+                    return
+                }
+
+                when (val action = intent.action) {
+                    STARTED_BROADCAST,
+                    STOPPED_BROADCAST,
+                    -> updateStatus()
+
+                    FAILED_BROADCAST -> {
+                        Toast
+                            .makeText(
+                                context,
+                                getString(R.string.failed_to_start, sender.name),
+                                Toast.LENGTH_SHORT,
+                            ).show()
+                        updateStatus()
+                    }
+
+                    else -> Log.w(TAG, "Unknown action: $action")
+                }
             }
         }
-    }
 
     @OptIn(ExperimentalMaterial3Api::class)
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -182,14 +190,15 @@ class MainActivity : ComponentActivity() {
             }
 
             DisposableEffect(prefs) {
-                val listener = SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
-                    if (key == "app_theme") {
-                        appTheme = prefs.getString("app_theme", "system") ?: "system"
+                val listener =
+                    SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
+                        if (key == "app_theme") {
+                            appTheme = prefs.getString("app_theme", "system") ?: "system"
+                        }
+                        if (key == "amoled_theme") {
+                            amoledTheme = prefs.getBoolean("amoled_theme", false)
+                        }
                     }
-                    if (key == "amoled_theme") {
-                        amoledTheme = prefs.getBoolean("amoled_theme", false)
-                    }
-                }
                 prefs.registerOnSharedPreferenceChangeListener(listener)
                 onDispose {
                     prefs.unregisterOnSharedPreferenceChangeListener(listener)
@@ -211,13 +220,14 @@ class MainActivity : ComponentActivity() {
                                             val intent = Intent(this@MainActivity, SettingsActivity::class.java)
                                             startActivity(intent)
                                         } else {
-                                            Toast.makeText(
-                                                this@MainActivity,
-                                                R.string.settings_unavailable,
-                                                Toast.LENGTH_SHORT
-                                            ).show()
+                                            Toast
+                                                .makeText(
+                                                    this@MainActivity,
+                                                    R.string.settings_unavailable,
+                                                    Toast.LENGTH_SHORT,
+                                                ).show()
                                         }
-                                    }
+                                    },
                                 ) {
                                     Icon(
                                         imageVector = Icons.Outlined.Settings,
@@ -241,23 +251,25 @@ class MainActivity : ComponentActivity() {
                                             text = { Text(stringResource(R.string.save_logs)) },
                                             onClick = {
                                                 menuExpanded = false
-                                                val intent = Intent(Intent.ACTION_CREATE_DOCUMENT).apply {
-                                                    addCategory(Intent.CATEGORY_OPENABLE)
-                                                    type = "text/plain"
-                                                    putExtra(Intent.EXTRA_TITLE, "byedpi.log")
-                                                }
+                                                val intent =
+                                                    Intent(Intent.ACTION_CREATE_DOCUMENT).apply {
+                                                        addCategory(Intent.CATEGORY_OPENABLE)
+                                                        type = "text/plain"
+                                                        putExtra(Intent.EXTRA_TITLE, "byedpi.log")
+                                                    }
                                                 logsRegister.launch(intent)
                                             },
                                         )
                                     }
                                 }
                             },
-                            colors = TopAppBarDefaults.topAppBarColors(
-                                containerColor = MaterialTheme.colorScheme.surface,
-                                titleContentColor = MaterialTheme.colorScheme.onSurface,
-                            ),
+                            colors =
+                                TopAppBarDefaults.topAppBarColors(
+                                    containerColor = MaterialTheme.colorScheme.surface,
+                                    titleContentColor = MaterialTheme.colorScheme.onSurface,
+                                ),
                         )
-                    }
+                    },
                 ) { innerPadding ->
                     MainScreen(
                         buttonText = buttonText,
@@ -277,11 +289,12 @@ class MainActivity : ComponentActivity() {
             }
         }
 
-        val intentFilter = IntentFilter().apply {
-            addAction(STARTED_BROADCAST)
-            addAction(STOPPED_BROADCAST)
-            addAction(FAILED_BROADCAST)
-        }
+        val intentFilter =
+            IntentFilter().apply {
+                addAction(STARTED_BROADCAST)
+                addAction(STOPPED_BROADCAST)
+                addAction(FAILED_BROADCAST)
+            }
 
         @SuppressLint("UnspecifiedRegisterReceiverFlag")
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
@@ -296,7 +309,7 @@ class MainActivity : ComponentActivity() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
             ContextCompat.checkSelfPermission(
                 this,
-                Manifest.permission.POST_NOTIFICATIONS
+                Manifest.permission.POST_NOTIFICATIONS,
             ) != PackageManager.PERMISSION_GRANTED
         ) {
             requestPermissions(arrayOf(Manifest.permission.POST_NOTIFICATIONS), 1)

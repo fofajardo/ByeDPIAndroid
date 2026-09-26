@@ -3,6 +3,7 @@ import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.plugin.compose")
+    id("com.diffplug.spotless")
 }
 
 android {
@@ -32,13 +33,13 @@ android {
 
     buildTypes {
         release {
-            buildConfigField("String", "VERSION_NAME",  "\"${defaultConfig.versionName}\"")
+            buildConfigField("String", "VERSION_NAME", "\"${defaultConfig.versionName}\"")
 
             isMinifyEnabled = false
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
         }
         debug {
-            buildConfigField("String", "VERSION_NAME",  "\"${defaultConfig.versionName}-debug\"")
+            buildConfigField("String", "VERSION_NAME", "\"${defaultConfig.versionName}-debug\"")
         }
     }
     compileOptions {
@@ -61,6 +62,28 @@ android {
         includeInApk = false
         // Disables dependency metadata when building Android App Bundles.
         includeInBundle = false
+    }
+
+    lint {
+        abortOnError = false
+        checkDependencies = true
+    }
+}
+
+spotless {
+    kotlin {
+        target("src/**/*.kt")
+        ktlint().customRuleSets(
+            listOf("io.nlopez.compose.rules:ktlint:0.4.22"),
+        )
+        trimTrailingWhitespace()
+        endWithNewline()
+    }
+    kotlinGradle {
+        target("*.gradle.kts")
+        ktlint()
+        trimTrailingWhitespace()
+        endWithNewline()
     }
 }
 
@@ -90,18 +113,24 @@ kotlin {
 tasks.register<Exec>("runNdkBuild") {
     group = "build"
 
-    val ndkDir = androidComponents.sdkComponents.ndkDirectory.get().asFile.absolutePath
-    executable = if (System.getProperty("os.name").startsWith("Windows", ignoreCase = true)) {
-        "$ndkDir\\ndk-build.cmd"
-    } else {
-        "$ndkDir/ndk-build"
-    }
-    setArgs(listOf(
-        "NDK_PROJECT_PATH=build/intermediates/ndkBuild",
-        "NDK_LIBS_OUT=src/main/jniLibs",
-        "APP_BUILD_SCRIPT=src/main/jni/Android.mk",
-        "NDK_APPLICATION_MK=src/main/jni/Application.mk"
-    ))
+    val ndkDir =
+        androidComponents.sdkComponents.ndkDirectory
+            .get()
+            .asFile.absolutePath
+    executable =
+        if (System.getProperty("os.name").startsWith("Windows", ignoreCase = true)) {
+            "$ndkDir\\ndk-build.cmd"
+        } else {
+            "$ndkDir/ndk-build"
+        }
+    setArgs(
+        listOf(
+            "NDK_PROJECT_PATH=build/intermediates/ndkBuild",
+            "NDK_LIBS_OUT=src/main/jniLibs",
+            "APP_BUILD_SCRIPT=src/main/jni/Android.mk",
+            "NDK_APPLICATION_MK=src/main/jni/Application.mk",
+        ),
+    )
 
     println("Command: $commandLine")
 }

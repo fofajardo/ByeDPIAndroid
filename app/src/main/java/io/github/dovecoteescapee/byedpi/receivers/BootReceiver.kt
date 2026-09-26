@@ -10,11 +10,14 @@ import io.github.dovecoteescapee.byedpi.utility.getPreferences
 import io.github.dovecoteescapee.byedpi.utility.mode
 
 class BootReceiver : BroadcastReceiver() {
-    override fun onReceive(context: Context, intent: Intent) {
+    override fun onReceive(
+        context: Context,
+        intent: Intent,
+    ) {
         val action = intent.action
-        if (Intent.ACTION_BOOT_COMPLETED != action
-            && Intent.ACTION_REBOOT != action
-            && "android.intent.action.QUICKBOOT_POWERON" != action
+        if (Intent.ACTION_BOOT_COMPLETED != action &&
+            Intent.ACTION_REBOOT != action &&
+            "android.intent.action.QUICKBOOT_POWERON" != action
         ) {
             return
         }

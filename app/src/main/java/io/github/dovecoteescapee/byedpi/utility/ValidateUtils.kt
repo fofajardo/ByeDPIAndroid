@@ -12,9 +12,10 @@ fun checkIp(ip: String): Boolean =
 
 fun checkNotLocalIp(ip: String): Boolean =
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-        InetAddresses.isNumericAddress(ip) && InetAddresses.parseNumericAddress(ip).let {
-            !it.isAnyLocalAddress && !it.isLoopbackAddress
-        }
+        InetAddresses.isNumericAddress(ip) &&
+            InetAddresses.parseNumericAddress(ip).let {
+                !it.isAnyLocalAddress && !it.isLoopbackAddress
+            }
     } else {
         true
     }
