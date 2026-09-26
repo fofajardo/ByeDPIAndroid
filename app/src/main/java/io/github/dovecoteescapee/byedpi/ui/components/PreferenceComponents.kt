@@ -240,6 +240,7 @@ fun EditTextPreferenceItem(
     onValueChange: (String) -> Unit,
     modifier: Modifier = Modifier,
     summary: String? = null,
+    defaultValue: String? = null,
     enabled: Boolean = true,
     shapes: ListItemShapes = segmentedShapeMiddle(),
     colors: ListItemColors = defaultSegmentedColors(),
@@ -249,10 +250,16 @@ fun EditTextPreferenceItem(
     var textInput by remember(showDialog) { mutableStateOf(value) }
     var isError by remember { mutableStateOf(false) }
 
+    val displaySubtitle = when {
+        value.isNotEmpty() -> value
+        !defaultValue.isNullOrEmpty() -> defaultValue
+        else -> stringResource(R.string.not_set)
+    }
+
     SettingsMenuLink(
         modifier = modifier,
         title = { Text(text = title) },
-        subtitle = { Text(text = summary ?: value) },
+        subtitle = { Text(text = displaySubtitle) },
         enabled = enabled,
         colors = colors,
         shapes = shapes,
@@ -269,25 +276,35 @@ fun EditTextPreferenceItem(
                 )
             },
             text = {
-                OutlinedTextField(
-                    value = textInput,
-                    onValueChange = {
-                        textInput = it
-                        isError = if (validate != null) {
-                            !validate(it)
+                Column(modifier = Modifier.fillMaxWidth()) {
+                    if (!summary.isNullOrEmpty()) {
+                        Text(
+                            text = summary,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(bottom = 16.dp),
+                        )
+                    }
+                    OutlinedTextField(
+                        value = textInput,
+                        onValueChange = {
+                            textInput = it
+                            isError = if (validate != null) {
+                                !validate(it)
+                            } else {
+                                false
+                            }
+                        },
+                        isError = isError,
+                        supportingText = if (isError) {
+                            { Text(text = stringResource(R.string.invalid_value)) }
                         } else {
-                            false
-                        }
-                    },
-                    isError = isError,
-                    supportingText = if (isError) {
-                        { Text(text = stringResource(R.string.invalid_value)) }
-                    } else {
-                        null
-                    },
-                    singleLine = true,
-                    modifier = Modifier.fillMaxWidth(),
-                )
+                            null
+                        },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                }
             },
             confirmButton = {
                 TextButton(

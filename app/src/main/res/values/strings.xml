@@ -35,7 +35,7 @@
     <string name="byedpi_fake_ttl_setting">TTL of fake packets</string>
     <string name="byedpi_fake_ttl_summary">Hop limit for fake packet so it drops before server</string>
     <string name="byedpi_host_mixed_case_setting">Host mixed case</string>
-    <string name="byedpi_host_mixed_case_summary">Randomize casing of Host header name (e.g. hOsT)</string>
+    <string name="byedpi_host_mixed_case_summary">Randomize casing of Host header name (e.g., hOsT)</string>
     <string name="byedpi_domain_mixed_case_setting">Domain mixed case</string>
     <string name="byedpi_domain_mixed_case_summary">Randomize casing of domain name in Host header</string>
     <string name="byedpi_host_remove_spaces_setting">Host remove spaces</string>
@@ -99,10 +99,10 @@
     <string name="byedpi_fake_tls_mod_setting">Fake TLS modification</string>
     <string name="byedpi_tlsminor_setting">TLS minor version</string>
     <string name="byedpi_no_ipv6_setting">Disable proxy IPv6</string>
-    <string name="byedpi_no_ipv6_summary">Prevent proxy from resolving or connecting via IPv6 (-X)</string>
+    <string name="byedpi_no_ipv6_summary">Prevent proxy from resolving or connecting via IPv6</string>
     <string name="byedpi_conn_ip_setting">Outgoing bind IP</string>
-    <string name="byedpi_await_int_setting">Connection wait interval (sec)</string>
-    <string name="byedpi_await_int_summary">Time between connection retry attempts</string>
+    <string name="byedpi_await_int_setting">Connection wait interval</string>
+    <string name="byedpi_await_int_summary">Seconds between connection retry attempts</string>
     <string name="byedpi_wait_send_setting">Wait send</string>
     <string name="byedpi_wait_send_summary">Wait for first data byte before connecting</string>
     <string name="byedpi_round_setting">Desync request round</string>
@@ -125,4 +125,5 @@
     <string name="sync_applied">Settings synced</string>
     <string name="service_active_warning_title">Service is currently active</string>
     <string name="service_active_warning_message">Changes made to settings will take effect after reconnecting.</string>
+    <string name="not_set">Not set</string>
 </resources>
