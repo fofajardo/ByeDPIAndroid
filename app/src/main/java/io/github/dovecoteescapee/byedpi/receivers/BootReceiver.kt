@@ -6,8 +6,10 @@ import android.content.Intent
 import android.net.VpnService
 import io.github.dovecoteescapee.byedpi.data.Mode
 import io.github.dovecoteescapee.byedpi.services.ServiceManager
-import io.github.dovecoteescapee.byedpi.utility.getPreferences
-import io.github.dovecoteescapee.byedpi.utility.mode
+import io.github.dovecoteescapee.byedpi.utility.getSettingsRepository
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 
 class BootReceiver : BroadcastReceiver() {
     override fun onReceive(
@@ -22,17 +24,25 @@ class BootReceiver : BroadcastReceiver() {
             return
         }
 
-        val prefs = context.getPreferences()
+        val pendingResult = goAsync()
+        CoroutineScope(Dispatchers.IO).launch {
+            try {
+                val repository = context.getSettingsRepository()
+                val settings = repository.getSettings()
 
-        if (!prefs.getBoolean("autostart", false)) {
-            return
+                if (!settings.autostart) {
+                    return@launch
+                }
+
+                val mode = Mode.fromString(settings.mode)
+                if (mode == Mode.VPN && VpnService.prepare(context) != null) {
+                    return@launch
+                }
+
+                ServiceManager.start(context, mode)
+            } finally {
+                pendingResult.finish()
+            }
         }
-
-        val mode = prefs.mode()
-        if (prefs.mode() == Mode.VPN && VpnService.prepare(context) != null) {
-            return
-        }
-
-        ServiceManager.start(context, mode)
     }
 }

@@ -1,75 +1,74 @@
 package io.github.dovecoteescapee.byedpi.utility
 
-import android.content.SharedPreferences
-import androidx.core.content.edit
+import io.github.dovecoteescapee.byedpi.data.EngineSettings
 
 object ByeDpiArgsConverter {
-    fun uiPreferencesToCmdArgs(prefs: SharedPreferences): String {
+    fun engineSettingsToCmdArgs(settings: EngineSettings): String {
         val args = mutableListOf<String>()
 
-        val ip = prefs.getString("byedpi_proxy_ip", "127.0.0.1") ?: "127.0.0.1"
+        val ip = settings.proxyIp
         if (ip.isNotBlank() && ip != "127.0.0.1") {
             args.add("-i")
             args.add(ip)
         }
 
-        val port = prefs.getString("byedpi_proxy_port", "1080") ?: "1080"
+        val port = settings.proxyPort
         if (port.isNotBlank() && port != "1080") {
             args.add("-p")
             args.add(port)
         }
 
-        val maxConn = prefs.getString("byedpi_max_connections", "512") ?: "512"
+        val maxConn = settings.maxConnections
         if (maxConn.isNotBlank() && maxConn != "512" && (maxConn.toIntOrNull() ?: 0) > 0) {
             args.add("-c")
             args.add(maxConn)
         }
 
-        val bufferSize = prefs.getString("byedpi_buffer_size", "16384") ?: "16384"
+        val bufferSize = settings.bufferSize
         if (bufferSize.isNotBlank() && bufferSize != "16384" && (bufferSize.toIntOrNull() ?: 0) > 0) {
             args.add("-b")
             args.add(bufferSize)
         }
 
-        val defaultTtl = prefs.getString("byedpi_default_ttl", "0") ?: "0"
+        val defaultTtl = settings.defaultTtl
         if (defaultTtl.isNotBlank() && (defaultTtl.toIntOrNull() ?: 0) > 0) {
             args.add("-g")
             args.add(defaultTtl)
         }
 
-        if (prefs.getBoolean("byedpi_no_domain", false)) {
+        if (settings.noDomain) {
             args.add("-N")
         }
 
-        if (prefs.getBoolean("byedpi_no_ipv6", false)) {
+        if (settings.noIpv6) {
             args.add("-X")
         }
 
-        val connIp = prefs.getString("byedpi_conn_ip", "") ?: ""
+        val connIp = settings.connIp
         if (connIp.isNotBlank()) {
             args.add("-I")
             args.add(connIp)
         }
 
-        if (prefs.getBoolean("byedpi_wait_send", false)) {
+        if (settings.waitSend) {
             args.add("-Z")
         }
 
-        val awaitInt = prefs.getString("byedpi_await_int", "") ?: ""
+        val awaitInt = settings.awaitInt
         if (awaitInt.isNotBlank() && (awaitInt.toIntOrNull() ?: 0) > 0) {
             args.add("-W")
             args.add(awaitInt)
         }
 
-        if (prefs.getBoolean("byedpi_tcp_fast_open", false)) {
+        if (settings.tcpFastOpen) {
             args.add("-F")
         }
 
-        val hostsMode = prefs.getString("byedpi_hosts_mode", "disable") ?: "disable"
+        val hostsMode = settings.hostsMode
         val hosts =
             when (hostsMode) {
-                "blacklist" -> prefs.getString("byedpi_hosts_blacklist", "") ?: ""
-                "whitelist" -> prefs.getString("byedpi_hosts_whitelist", "") ?: ""
+                "blacklist" -> settings.hostsBlacklist
+                "whitelist" -> settings.hostsWhitelist
                 else -> ""
             }
         if (hostsMode == "blacklist" && hosts.isNotBlank()) {
@@ -82,9 +81,9 @@ object ByeDpiArgsConverter {
             args.add(":$hosts")
         }
 
-        val desyncHttp = prefs.getBoolean("byedpi_desync_http", true)
-        val desyncHttps = prefs.getBoolean("byedpi_desync_https", true)
-        val desyncUdp = prefs.getBoolean("byedpi_desync_udp", false)
+        val desyncHttp = settings.desyncHttp
+        val desyncHttps = settings.desyncHttps
+        val desyncUdp = settings.desyncUdp
 
         val protoList = mutableListOf<Char>()
         if (desyncHttps) {
@@ -102,9 +101,9 @@ object ByeDpiArgsConverter {
             args.add(protoStr)
         }
 
-        val desyncMethod = prefs.getString("byedpi_desync_method", "none") ?: "none"
-        val splitPosition = prefs.getString("byedpi_split_position", "0") ?: "0"
-        val splitAtHost = prefs.getBoolean("byedpi_split_at_host", false)
+        val desyncMethod = settings.desyncMethod
+        val splitPosition = settings.splitPosition
+        val splitAtHost = settings.splitAtHost
 
         if (desyncMethod != "none") {
             val suffix =
@@ -144,41 +143,41 @@ object ByeDpiArgsConverter {
         }
 
         if (desyncMethod == "fake") {
-            val fakeTtl = prefs.getString("byedpi_fake_ttl", "0") ?: "0"
+            val fakeTtl = settings.fakeTtl
             if (fakeTtl.isNotBlank() && (fakeTtl.toIntOrNull() ?: 0) > 0) {
                 args.add("-t")
                 args.add(fakeTtl)
             }
 
-            val fakeOffset = prefs.getString("byedpi_fake_offset", "0") ?: "0"
+            val fakeOffset = settings.fakeOffset
             if (fakeOffset.isNotBlank() && (fakeOffset.toIntOrNull() ?: 0) > 0) {
                 args.add("-O")
                 args.add(fakeOffset)
             }
 
-            if (prefs.getBoolean("byedpi_md5sig", false)) {
+            if (settings.md5sig) {
                 args.add("-S")
             }
 
-            val fakeData = prefs.getString("byedpi_fake_data", "") ?: ""
+            val fakeData = settings.fakeData
             if (fakeData.isNotBlank()) {
                 args.add("-l")
                 args.add(fakeData)
             }
 
-            val fakeTlsMod = prefs.getString("byedpi_fake_tls_mod", "") ?: ""
+            val fakeTlsMod = settings.fakeTlsMod
             if (fakeTlsMod.isNotBlank()) {
                 args.add("-Q")
                 args.add(fakeTlsMod)
             }
 
-            val tlsminor = prefs.getString("byedpi_tlsminor", "") ?: ""
+            val tlsminor = settings.tlsminor
             if (tlsminor.isNotBlank() && (tlsminor.toIntOrNull() ?: -1) >= 0) {
                 args.add("-m")
                 args.add(tlsminor)
             }
 
-            val fakeSni = prefs.getString("byedpi_fake_sni", "") ?: ""
+            val fakeSni = settings.fakeSni
             if (fakeSni.isNotBlank()) {
                 args.add("-n")
                 args.add(fakeSni)
@@ -186,7 +185,7 @@ object ByeDpiArgsConverter {
         }
 
         if (desyncMethod == "oob" || desyncMethod == "disoob") {
-            val oobData = prefs.getString("byedpi_oob_data", "a") ?: "a"
+            val oobData = settings.oobData.ifEmpty { "a" }
             if (oobData.isNotEmpty()) {
                 val byteVal = oobData[0].code
                 args.add("-e")
@@ -195,13 +194,13 @@ object ByeDpiArgsConverter {
         }
 
         val httpMods = mutableListOf<Char>()
-        if (prefs.getBoolean("byedpi_host_mixed_case", false)) {
+        if (settings.hostMixedCase) {
             httpMods.add('h')
         }
-        if (prefs.getBoolean("byedpi_domain_mixed_case", false)) {
+        if (settings.domainMixedCase) {
             httpMods.add('d')
         }
-        if (prefs.getBoolean("byedpi_host_remove_spaces", false)) {
+        if (settings.hostRemoveSpaces) {
             httpMods.add('r')
         }
         if (httpMods.isNotEmpty()) {
@@ -209,9 +208,9 @@ object ByeDpiArgsConverter {
             args.add(httpMods.joinToString(","))
         }
 
-        if (prefs.getBoolean("byedpi_tlsrec_enabled", false)) {
-            val tlsPos = prefs.getString("byedpi_tlsrec_position", "0") ?: "0"
-            val atSni = prefs.getBoolean("byedpi_tlsrec_at_sni", false)
+        if (settings.tlsrecEnabled) {
+            val tlsPos = settings.tlsrecPosition
+            val atSni = settings.tlsrecAtSni
             val tlsArg =
                 if (atSni) {
                     "$tlsPos+s"
@@ -222,47 +221,47 @@ object ByeDpiArgsConverter {
             args.add(tlsArg)
         }
 
-        val udpFakeCount = prefs.getString("byedpi_udp_fake_count", "0") ?: "0"
+        val udpFakeCount = settings.udpFakeCount
         if (udpFakeCount.isNotBlank() && (udpFakeCount.toIntOrNull() ?: 0) > 0) {
             args.add("-a")
             args.add(udpFakeCount)
         }
 
-        if (prefs.getBoolean("byedpi_drop_sack", false)) {
+        if (settings.dropSack) {
             args.add("-Y")
         }
 
-        val round = prefs.getString("byedpi_round", "") ?: ""
+        val round = settings.round
         if (round.isNotBlank()) {
             args.add("-R")
             args.add(round)
         }
 
-        val pf = prefs.getString("byedpi_pf", "") ?: ""
+        val pf = settings.pf
         if (pf.isNotBlank()) {
             args.add("-V")
             args.add(pf)
         }
 
-        val ipset = prefs.getString("byedpi_ipset", "") ?: ""
+        val ipset = settings.ipset
         if (ipset.isNotBlank()) {
             args.add("-j")
             args.add(":$ipset")
         }
 
-        val auto = prefs.getString("byedpi_auto", "") ?: ""
+        val auto = settings.auto
         if (auto.isNotBlank()) {
             args.add("-A")
             args.add(auto)
         }
 
-        val autoMode = prefs.getString("byedpi_auto_mode", "none") ?: "none"
+        val autoMode = settings.autoMode
         if (autoMode.isNotBlank() && autoMode != "none") {
             args.add("-L")
             args.add(autoMode)
         }
 
-        val timeout = prefs.getString("byedpi_timeout", "") ?: ""
+        val timeout = settings.timeout
         if (timeout.isNotBlank()) {
             args.add("-T")
             args.add(timeout)
@@ -271,10 +270,10 @@ object ByeDpiArgsConverter {
         return args.joinToString(" ")
     }
 
-    fun applyCmdArgsToUiPreferences(
+    fun applyCmdArgsToEngineSettings(
         argsStr: String,
-        prefs: SharedPreferences,
-    ) {
+        current: EngineSettings,
+    ): EngineSettings {
         val trimmed = argsStr.trim()
         val firstArgIndex = trimmed.indexOf("-")
         val effectiveArgsStr =
@@ -286,78 +285,78 @@ object ByeDpiArgsConverter {
 
         val tokens = shellSplit(effectiveArgsStr)
         if (tokens.isEmpty()) {
-            return
+            return current
         }
 
         var i = 0
-        val updates = mutableMapOf<String, Any>()
+        var result = current
 
         while (i < tokens.size) {
             val token = tokens[i]
             when {
                 token == "-i" && i + 1 < tokens.size -> {
-                    updates["byedpi_proxy_ip"] = tokens[++i]
+                    result = result.copy(proxyIp = tokens[++i])
                 }
                 token.startsWith("-i") && token.length > 2 -> {
-                    updates["byedpi_proxy_ip"] = token.substring(2)
+                    result = result.copy(proxyIp = token.substring(2))
                 }
 
                 token == "-p" && i + 1 < tokens.size -> {
-                    updates["byedpi_proxy_port"] = tokens[++i]
+                    result = result.copy(proxyPort = tokens[++i])
                 }
                 token.startsWith("-p") && token.length > 2 -> {
-                    updates["byedpi_proxy_port"] = token.substring(2)
+                    result = result.copy(proxyPort = token.substring(2))
                 }
 
                 token == "-c" && i + 1 < tokens.size -> {
-                    updates["byedpi_max_connections"] = tokens[++i]
+                    result = result.copy(maxConnections = tokens[++i])
                 }
                 token.startsWith("-c") && token.length > 2 -> {
-                    updates["byedpi_max_connections"] = token.substring(2)
+                    result = result.copy(maxConnections = token.substring(2))
                 }
 
                 token == "-b" && i + 1 < tokens.size -> {
-                    updates["byedpi_buffer_size"] = tokens[++i]
+                    result = result.copy(bufferSize = tokens[++i])
                 }
                 token.startsWith("-b") && token.length > 2 -> {
-                    updates["byedpi_buffer_size"] = token.substring(2)
+                    result = result.copy(bufferSize = token.substring(2))
                 }
 
                 token == "-g" && i + 1 < tokens.size -> {
-                    updates["byedpi_default_ttl"] = tokens[++i]
+                    result = result.copy(defaultTtl = tokens[++i])
                 }
                 token.startsWith("-g") && token.length > 2 -> {
-                    updates["byedpi_default_ttl"] = token.substring(2)
+                    result = result.copy(defaultTtl = token.substring(2))
                 }
 
                 token == "-N" -> {
-                    updates["byedpi_no_domain"] = true
+                    result = result.copy(noDomain = true)
                 }
 
                 token == "-X" -> {
-                    updates["byedpi_no_ipv6"] = true
+                    result = result.copy(noIpv6 = true)
                 }
 
                 token == "-I" && i + 1 < tokens.size -> {
-                    updates["byedpi_conn_ip"] = tokens[++i]
+                    result = result.copy(connIp = tokens[++i])
                 }
                 token.startsWith("-I") && token.length > 2 -> {
-                    updates["byedpi_conn_ip"] = token.substring(2)
+                    result = result.copy(connIp = token.substring(2))
                 }
 
                 token == "-Z" -> {
-                    updates["byedpi_wait_send"] = true
+                    result = result.copy(waitSend = true)
                 }
 
                 token == "-W" && i + 1 < tokens.size -> {
-                    updates["byedpi_await_int"] = tokens[++i]
+                    result = result.copy(awaitInt = tokens[++i])
                 }
                 token.startsWith("-W") && token.length > 2 -> {
-                    updates["byedpi_await_int"] = token.substring(2)
+                    result = result.copy(awaitInt = token.substring(2))
                 }
 
                 token == "-F" -> {
-                    updates["byedpi_tcp_fast_open"] = true
+                    result = result.copy(tcpFastOpen = true)
                 }
 
                 token == "-H" && i + 1 < tokens.size -> {
@@ -368,8 +367,11 @@ object ByeDpiArgsConverter {
                         } else {
                             raw
                         }
-                    updates["byedpi_hosts_mode"] = "blacklist"
-                    updates["byedpi_hosts_blacklist"] = hostVal
+                    result =
+                        result.copy(
+                            hostsMode = if (result.hostsMode == "none") "whitelist" else result.hostsMode,
+                            hostsWhitelist = hostVal,
+                        )
                 }
                 token.startsWith("-H") && token.length > 2 -> {
                     val raw = token.substring(2)
@@ -379,236 +381,289 @@ object ByeDpiArgsConverter {
                         } else {
                             raw
                         }
-                    updates["byedpi_hosts_mode"] = "blacklist"
-                    updates["byedpi_hosts_blacklist"] = hostVal
+                    result =
+                        result.copy(
+                            hostsMode = if (result.hostsMode == "none") "whitelist" else result.hostsMode,
+                            hostsWhitelist = hostVal,
+                        )
                 }
 
                 token == "-K" && i + 1 < tokens.size -> {
-                    val p = tokens[++i]
-                    updates["byedpi_desync_https"] = p.contains('t')
-                    updates["byedpi_desync_http"] = p.contains('h')
-                    updates["byedpi_desync_udp"] = p.contains('u')
+                    val protos = tokens[++i].split(",").map { it.trim() }
+                    result =
+                        result.copy(
+                            desyncHttps = protos.contains("t"),
+                            desyncHttp = protos.contains("h"),
+                            desyncUdp = protos.contains("u"),
+                        )
                 }
                 token.startsWith("-K") && token.length > 2 -> {
-                    val p = token.substring(2)
-                    updates["byedpi_desync_https"] = p.contains('t')
-                    updates["byedpi_desync_http"] = p.contains('h')
-                    updates["byedpi_desync_udp"] = p.contains('u')
+                    val protos = token.substring(2).split(",").map { it.trim() }
+                    result =
+                        result.copy(
+                            desyncHttps = protos.contains("t"),
+                            desyncHttp = protos.contains("h"),
+                            desyncUdp = protos.contains("u"),
+                        )
                 }
 
-                token in listOf("-s", "-d", "-f", "-o", "-q") -> {
-                    val method =
-                        when (token) {
-                            "-s" -> "split"
-                            "-d" -> "disorder"
-                            "-f" -> "fake"
-                            "-o" -> "oob"
-                            "-q" -> "disoob"
-                            else -> "none"
-                        }
-                    updates["byedpi_desync_method"] = method
-                    if (i + 1 < tokens.size && !tokens[i + 1].startsWith("-")) {
-                        val posStr = tokens[++i]
-                        val isAtHost = posStr.endsWith("+s") || posStr.endsWith("+h")
-                        val cleanPos = posStr.replace("+s", "").replace("+h", "")
-                        updates["byedpi_split_position"] = cleanPos
-                        updates["byedpi_split_at_host"] = isAtHost
-                    }
+                token == "-s" && i + 1 < tokens.size -> {
+                    val pos = tokens[++i]
+                    result =
+                        result.copy(
+                            desyncMethod = "split",
+                            splitAtHost = pos.endsWith("+s") || pos.endsWith("+h"),
+                            splitPosition = pos.removeSuffix("+s").removeSuffix("+h"),
+                        )
                 }
-                token.length > 2 &&
-                    (
-                        token.startsWith("-s") ||
-                            token.startsWith("-d") ||
-                            token.startsWith("-f") ||
-                            token.startsWith("-o") ||
-                            token.startsWith("-q")
-                    ) -> {
-                    val flag = token.substring(0, 2)
-                    val posStr = token.substring(2)
-                    val method =
-                        when (flag) {
-                            "-s" -> "split"
-                            "-d" -> "disorder"
-                            "-f" -> "fake"
-                            "-o" -> "oob"
-                            "-q" -> "disoob"
-                            else -> "none"
-                        }
-                    updates["byedpi_desync_method"] = method
-                    val isAtHost = posStr.endsWith("+s") || posStr.endsWith("+h")
-                    val cleanPos = posStr.replace("+s", "").replace("+h", "")
-                    updates["byedpi_split_position"] = cleanPos
-                    updates["byedpi_split_at_host"] = isAtHost
+                token.startsWith("-s") && token.length > 2 -> {
+                    val pos = token.substring(2)
+                    result =
+                        result.copy(
+                            desyncMethod = "split",
+                            splitAtHost = pos.endsWith("+s") || pos.endsWith("+h"),
+                            splitPosition = pos.removeSuffix("+s").removeSuffix("+h"),
+                        )
+                }
+
+                token == "-d" && i + 1 < tokens.size -> {
+                    val pos = tokens[++i]
+                    result =
+                        result.copy(
+                            desyncMethod = "disorder",
+                            splitAtHost = pos.endsWith("+s") || pos.endsWith("+h"),
+                            splitPosition = pos.removeSuffix("+s").removeSuffix("+h"),
+                        )
+                }
+                token.startsWith("-d") && token.length > 2 -> {
+                    val pos = token.substring(2)
+                    result =
+                        result.copy(
+                            desyncMethod = "disorder",
+                            splitAtHost = pos.endsWith("+s") || pos.endsWith("+h"),
+                            splitPosition = pos.removeSuffix("+s").removeSuffix("+h"),
+                        )
+                }
+
+                token == "-f" && i + 1 < tokens.size -> {
+                    val pos = tokens[++i]
+                    result =
+                        result.copy(
+                            desyncMethod = "fake",
+                            splitAtHost = pos.endsWith("+s") || pos.endsWith("+h"),
+                            splitPosition = pos.removeSuffix("+s").removeSuffix("+h"),
+                        )
+                }
+                token.startsWith("-f") && token.length > 2 -> {
+                    val pos = token.substring(2)
+                    result =
+                        result.copy(
+                            desyncMethod = "fake",
+                            splitAtHost = pos.endsWith("+s") || pos.endsWith("+h"),
+                            splitPosition = pos.removeSuffix("+s").removeSuffix("+h"),
+                        )
+                }
+
+                token == "-o" && i + 1 < tokens.size -> {
+                    val pos = tokens[++i]
+                    result =
+                        result.copy(
+                            desyncMethod = "oob",
+                            splitAtHost = pos.endsWith("+s") || pos.endsWith("+h"),
+                            splitPosition = pos.removeSuffix("+s").removeSuffix("+h"),
+                        )
+                }
+                token.startsWith("-o") && token.length > 2 -> {
+                    val pos = token.substring(2)
+                    result =
+                        result.copy(
+                            desyncMethod = "oob",
+                            splitAtHost = pos.endsWith("+s") || pos.endsWith("+h"),
+                            splitPosition = pos.removeSuffix("+s").removeSuffix("+h"),
+                        )
+                }
+
+                token == "-q" && i + 1 < tokens.size -> {
+                    val pos = tokens[++i]
+                    result =
+                        result.copy(
+                            desyncMethod = "disoob",
+                            splitAtHost = pos.endsWith("+s") || pos.endsWith("+h"),
+                            splitPosition = pos.removeSuffix("+s").removeSuffix("+h"),
+                        )
+                }
+                token.startsWith("-q") && token.length > 2 -> {
+                    val pos = token.substring(2)
+                    result =
+                        result.copy(
+                            desyncMethod = "disoob",
+                            splitAtHost = pos.endsWith("+s") || pos.endsWith("+h"),
+                            splitPosition = pos.removeSuffix("+s").removeSuffix("+h"),
+                        )
                 }
 
                 token == "-t" && i + 1 < tokens.size -> {
-                    updates["byedpi_fake_ttl"] = tokens[++i]
+                    result = result.copy(fakeTtl = tokens[++i])
                 }
                 token.startsWith("-t") && token.length > 2 -> {
-                    updates["byedpi_fake_ttl"] = token.substring(2)
+                    result = result.copy(fakeTtl = token.substring(2))
                 }
 
                 token == "-O" && i + 1 < tokens.size -> {
-                    updates["byedpi_fake_offset"] = tokens[++i]
+                    result = result.copy(fakeOffset = tokens[++i])
                 }
                 token.startsWith("-O") && token.length > 2 -> {
-                    updates["byedpi_fake_offset"] = token.substring(2)
+                    result = result.copy(fakeOffset = token.substring(2))
                 }
 
                 token == "-S" -> {
-                    updates["byedpi_md5sig"] = true
+                    result = result.copy(md5sig = true)
                 }
 
                 token == "-l" && i + 1 < tokens.size -> {
-                    updates["byedpi_fake_data"] = tokens[++i]
+                    result = result.copy(fakeData = tokens[++i])
                 }
                 token.startsWith("-l") && token.length > 2 -> {
-                    updates["byedpi_fake_data"] = token.substring(2)
+                    result = result.copy(fakeData = token.substring(2))
                 }
 
                 token == "-Q" && i + 1 < tokens.size -> {
-                    updates["byedpi_fake_tls_mod"] = tokens[++i]
+                    result = result.copy(fakeTlsMod = tokens[++i])
                 }
                 token.startsWith("-Q") && token.length > 2 -> {
-                    updates["byedpi_fake_tls_mod"] = token.substring(2)
+                    result = result.copy(fakeTlsMod = token.substring(2))
                 }
 
                 token == "-m" && i + 1 < tokens.size -> {
-                    updates["byedpi_tlsminor"] = tokens[++i]
+                    result = result.copy(tlsminor = tokens[++i])
                 }
                 token.startsWith("-m") && token.length > 2 -> {
-                    updates["byedpi_tlsminor"] = token.substring(2)
+                    result = result.copy(tlsminor = token.substring(2))
                 }
 
                 token == "-n" && i + 1 < tokens.size -> {
-                    updates["byedpi_fake_sni"] = tokens[++i]
+                    result = result.copy(fakeSni = tokens[++i])
                 }
                 token.startsWith("-n") && token.length > 2 -> {
-                    updates["byedpi_fake_sni"] = token.substring(2)
+                    result = result.copy(fakeSni = token.substring(2))
                 }
 
                 token == "-e" && i + 1 < tokens.size -> {
-                    val raw = tokens[++i]
-                    updates["byedpi_oob_data"] = parseOobChar(raw)
+                    result = result.copy(oobData = parseOobChar(tokens[++i]))
                 }
                 token.startsWith("-e") && token.length > 2 -> {
-                    val raw = token.substring(2)
-                    updates["byedpi_oob_data"] = parseOobChar(raw)
+                    result = result.copy(oobData = parseOobChar(token.substring(2)))
                 }
 
                 token == "-M" && i + 1 < tokens.size -> {
-                    val m = tokens[++i]
-                    updates["byedpi_host_mixed_case"] = m.contains('h')
-                    updates["byedpi_domain_mixed_case"] = m.contains('d')
-                    updates["byedpi_host_remove_spaces"] = m.contains('r')
+                    val mods = tokens[++i].split(",").map { it.trim() }
+                    result =
+                        result.copy(
+                            hostMixedCase = mods.contains("h"),
+                            domainMixedCase = mods.contains("d"),
+                            hostRemoveSpaces = mods.contains("r"),
+                        )
                 }
                 token.startsWith("-M") && token.length > 2 -> {
-                    val m = token.substring(2)
-                    updates["byedpi_host_mixed_case"] = m.contains('h')
-                    updates["byedpi_domain_mixed_case"] = m.contains('d')
-                    updates["byedpi_host_remove_spaces"] = m.contains('r')
+                    val mods = token.substring(2).split(",").map { it.trim() }
+                    result =
+                        result.copy(
+                            hostMixedCase = mods.contains("h"),
+                            domainMixedCase = mods.contains("d"),
+                            hostRemoveSpaces = mods.contains("r"),
+                        )
                 }
 
                 token == "-r" && i + 1 < tokens.size -> {
-                    updates["byedpi_tlsrec_enabled"] = true
-                    val r = tokens[++i]
-                    val atSni = r.endsWith("+s")
-                    val pos = r.replace("+s", "")
-                    updates["byedpi_tlsrec_position"] = pos
-                    updates["byedpi_tlsrec_at_sni"] = atSni
+                    val raw = tokens[++i]
+                    result =
+                        result.copy(
+                            tlsrecEnabled = true,
+                            tlsrecAtSni = raw.endsWith("+s"),
+                            tlsrecPosition = raw.removeSuffix("+s"),
+                        )
                 }
                 token.startsWith("-r") && token.length > 2 -> {
-                    updates["byedpi_tlsrec_enabled"] = true
-                    val r = token.substring(2)
-                    val atSni = r.endsWith("+s")
-                    val pos = r.replace("+s", "")
-                    updates["byedpi_tlsrec_position"] = pos
-                    updates["byedpi_tlsrec_at_sni"] = atSni
+                    val raw = token.substring(2)
+                    result =
+                        result.copy(
+                            tlsrecEnabled = true,
+                            tlsrecAtSni = raw.endsWith("+s"),
+                            tlsrecPosition = raw.removeSuffix("+s"),
+                        )
                 }
 
                 token == "-a" && i + 1 < tokens.size -> {
-                    updates["byedpi_udp_fake_count"] = tokens[++i]
+                    result = result.copy(udpFakeCount = tokens[++i])
                 }
                 token.startsWith("-a") && token.length > 2 -> {
-                    updates["byedpi_udp_fake_count"] = token.substring(2)
+                    result = result.copy(udpFakeCount = token.substring(2))
                 }
 
                 token == "-Y" -> {
-                    updates["byedpi_drop_sack"] = true
+                    result = result.copy(dropSack = true)
                 }
 
                 token == "-R" && i + 1 < tokens.size -> {
-                    updates["byedpi_round"] = tokens[++i]
+                    result = result.copy(round = tokens[++i])
                 }
                 token.startsWith("-R") && token.length > 2 -> {
-                    updates["byedpi_round"] = token.substring(2)
+                    result = result.copy(round = token.substring(2))
                 }
 
                 token == "-V" && i + 1 < tokens.size -> {
-                    updates["byedpi_pf"] = tokens[++i]
+                    result = result.copy(pf = tokens[++i])
                 }
                 token.startsWith("-V") && token.length > 2 -> {
-                    updates["byedpi_pf"] = token.substring(2)
+                    result = result.copy(pf = token.substring(2))
                 }
 
                 token == "-j" && i + 1 < tokens.size -> {
                     val raw = tokens[++i]
-                    updates["byedpi_ipset"] =
-                        if (raw.startsWith(":")) {
-                            raw.substring(1)
-                        } else {
-                            raw
-                        }
+                    val ipsetVal = if (raw.startsWith(":")) raw.substring(1) else raw
+                    result = result.copy(ipset = ipsetVal)
                 }
                 token.startsWith("-j") && token.length > 2 -> {
                     val raw = token.substring(2)
-                    updates["byedpi_ipset"] =
-                        if (raw.startsWith(":")) {
-                            raw.substring(1)
-                        } else {
-                            raw
-                        }
+                    val ipsetVal = if (raw.startsWith(":")) raw.substring(1) else raw
+                    result = result.copy(ipset = ipsetVal)
                 }
 
                 token == "-A" && i + 1 < tokens.size -> {
-                    val a = tokens[++i]
-                    if (a != "none") {
-                        updates["byedpi_auto"] = a
+                    val raw = tokens[++i]
+                    if (raw == "none" && result.hostsMode == "none") {
+                        result = result.copy(hostsMode = "blacklist")
+                    } else if (raw != "none") {
+                        result = result.copy(auto = raw)
                     }
                 }
                 token.startsWith("-A") && token.length > 2 -> {
-                    val a = token.substring(2)
-                    if (a != "none") {
-                        updates["byedpi_auto"] = a
+                    val raw = token.substring(2)
+                    if (raw == "none" && result.hostsMode == "none") {
+                        result = result.copy(hostsMode = "blacklist")
+                    } else if (raw != "none") {
+                        result = result.copy(auto = raw)
                     }
                 }
 
                 token == "-L" && i + 1 < tokens.size -> {
-                    updates["byedpi_auto_mode"] = tokens[++i]
+                    result = result.copy(autoMode = tokens[++i])
                 }
                 token.startsWith("-L") && token.length > 2 -> {
-                    updates["byedpi_auto_mode"] = token.substring(2)
+                    result = result.copy(autoMode = token.substring(2))
                 }
 
                 token == "-T" && i + 1 < tokens.size -> {
-                    updates["byedpi_timeout"] = tokens[++i]
+                    result = result.copy(timeout = tokens[++i])
                 }
                 token.startsWith("-T") && token.length > 2 -> {
-                    updates["byedpi_timeout"] = token.substring(2)
+                    result = result.copy(timeout = token.substring(2))
                 }
             }
             i++
         }
 
-        prefs.edit {
-            for ((key, value) in updates) {
-                when (value) {
-                    is String -> putString(key, value)
-                    is Boolean -> putBoolean(key, value)
-                    is Int -> putInt(key, value)
-                }
-            }
-        }
+        return result
     }
 
     private fun parseOobChar(raw: String): String {

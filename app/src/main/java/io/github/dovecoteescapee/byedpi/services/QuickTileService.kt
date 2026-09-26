@@ -18,8 +18,7 @@ import androidx.core.service.quicksettings.TileServiceCompat
 import io.github.dovecoteescapee.byedpi.R
 import io.github.dovecoteescapee.byedpi.activities.MainActivity
 import io.github.dovecoteescapee.byedpi.data.*
-import io.github.dovecoteescapee.byedpi.utility.getPreferences
-import io.github.dovecoteescapee.byedpi.utility.mode
+import io.github.dovecoteescapee.byedpi.utility.currentMode
 
 
 @RequiresApi(Build.VERSION_CODES.N)
@@ -110,7 +109,7 @@ class QuickTileService : TileService() {
         val (status) = appStatus
         when (status) {
             AppStatus.Halted -> {
-                val mode = getPreferences().mode()
+                val mode = currentMode()
 
                 if (mode == Mode.VPN && VpnService.prepare(this) != null) {
                     updateStatus()

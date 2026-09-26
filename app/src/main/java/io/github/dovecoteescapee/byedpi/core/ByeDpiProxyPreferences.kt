@@ -1,15 +1,15 @@
 package io.github.dovecoteescapee.byedpi.core
 
-import android.content.SharedPreferences
-import io.github.dovecoteescapee.byedpi.utility.getStringNotNull
+import io.github.dovecoteescapee.byedpi.data.EngineSettings
 import io.github.dovecoteescapee.byedpi.utility.shellSplit
 
 sealed interface ByeDpiProxyPreferences {
     companion object {
-        fun fromSharedPreferences(preferences: SharedPreferences): ByeDpiProxyPreferences =
-            when (preferences.getBoolean("byedpi_enable_cmd_settings", false)) {
-                true -> ByeDpiProxyCmdPreferences(preferences)
-                false -> ByeDpiProxyUIPreferences(preferences)
+        fun fromEngineSettings(settings: EngineSettings): ByeDpiProxyPreferences =
+            if (settings.enableCmdSettings) {
+                ByeDpiProxyCmdPreferences(settings.cmdArgs)
+            } else {
+                ByeDpiProxyUIPreferences(settings)
             }
     }
 }
@@ -18,13 +18,6 @@ class ByeDpiProxyCmdPreferences(
     val args: Array<String>,
 ) : ByeDpiProxyPreferences {
     constructor(cmd: String) : this(cmdToArgs(cmd))
-
-    constructor(preferences: SharedPreferences) : this(
-        preferences.getStringNotNull(
-            "byedpi_cmd_args",
-            "",
-        ),
-    )
 
     companion object {
         private fun cmdToArgs(cmd: String): Array<String> {
@@ -36,159 +29,97 @@ class ByeDpiProxyCmdPreferences(
 }
 
 class ByeDpiProxyUIPreferences(
-    ip: String? = null,
-    port: Int? = null,
-    maxConnections: Int? = null,
-    bufferSize: Int? = null,
-    defaultTtl: Int? = null,
-    noDomain: Boolean? = null,
-    desyncHttp: Boolean? = null,
-    desyncHttps: Boolean? = null,
-    desyncUdp: Boolean? = null,
-    desyncMethod: DesyncMethod? = null,
-    splitPosition: Int? = null,
-    splitAtHost: Boolean? = null,
-    fakeTtl: Int? = null,
-    fakeSni: String? = null,
-    oobChar: String? = null,
-    hostMixedCase: Boolean? = null,
-    domainMixedCase: Boolean? = null,
-    hostRemoveSpaces: Boolean? = null,
-    tlsRecordSplit: Boolean? = null,
-    tlsRecordSplitPosition: Int? = null,
-    tlsRecordSplitAtSni: Boolean? = null,
-    hostsMode: HostsMode? = null,
-    hosts: String? = null,
-    tcpFastOpen: Boolean? = null,
-    udpFakeCount: Int? = null,
-    dropSack: Boolean? = null,
-    byedpiFakeOffset: Int? = null,
-    noIpv6: Boolean? = null,
-    connIp: String? = null,
-    waitSend: Boolean? = null,
-    awaitInt: Int? = null,
-    md5sig: Boolean? = null,
-    fakeData: String? = null,
-    fakeTlsMod: String? = null,
-    tlsminor: Int? = null,
-    round: String? = null,
-    pf: String? = null,
-    ipset: String? = null,
-    auto: String? = null,
-    autoMode: String? = null,
-    timeout: String? = null,
+    val ip: String = "127.0.0.1",
+    val port: Int = 1080,
+    val maxConnections: Int = 512,
+    val bufferSize: Int = 16384,
+    val defaultTtl: Int = 0,
+    val customTtl: Boolean = false,
+    val noDomain: Boolean = false,
+    val desyncHttp: Boolean = true,
+    val desyncHttps: Boolean = true,
+    val desyncUdp: Boolean = false,
+    val desyncMethod: DesyncMethod = DesyncMethod.Disorder,
+    val splitPosition: Int = 1,
+    val splitAtHost: Boolean = false,
+    val fakeTtl: Int = 8,
+    val fakeSni: String = "www.iana.org",
+    val oobChar: Byte = 'a'.code.toByte(),
+    val hostMixedCase: Boolean = false,
+    val domainMixedCase: Boolean = false,
+    val hostRemoveSpaces: Boolean = false,
+    val tlsRecordSplit: Boolean = false,
+    val tlsRecordSplitPosition: Int = 0,
+    val tlsRecordSplitAtSni: Boolean = false,
+    val hostsMode: HostsMode = HostsMode.Disable,
+    val hosts: String? = null,
+    val tcpFastOpen: Boolean = false,
+    val udpFakeCount: Int = 0,
+    val dropSack: Boolean = false,
+    val fakeOffset: Int = 0,
+    val noIpv6: Boolean = false,
+    val connIp: String? = null,
+    val waitSend: Boolean = false,
+    val awaitInt: Int = 0,
+    val md5sig: Boolean = false,
+    val fakeData: String? = null,
+    val fakeTlsMod: String? = null,
+    val tlsminor: Int = -1,
+    val round: String? = null,
+    val pf: String? = null,
+    val ipset: String? = null,
+    val auto: String? = null,
+    val autoMode: String? = null,
+    val timeout: String? = null,
 ) : ByeDpiProxyPreferences {
-    val ip: String = ip ?: "127.0.0.1"
-    val port: Int = port ?: 1080
-    val maxConnections: Int = maxConnections ?: 512
-    val bufferSize: Int = bufferSize ?: 16384
-    val defaultTtl: Int = defaultTtl ?: 0
-    val customTtl: Boolean = defaultTtl != null
-    val noDomain: Boolean = noDomain ?: false
-    val desyncHttp: Boolean = desyncHttp ?: true
-    val desyncHttps: Boolean = desyncHttps ?: true
-    val desyncUdp: Boolean = desyncUdp ?: false
-    val desyncMethod: DesyncMethod = desyncMethod ?: DesyncMethod.Disorder
-    val splitPosition: Int = splitPosition ?: 1
-    val splitAtHost: Boolean = splitAtHost ?: false
-    val fakeTtl: Int = fakeTtl ?: 8
-    val fakeSni: String = fakeSni ?: "www.iana.org"
-    val oobChar: Byte = (oobChar ?: "a")[0].code.toByte()
-    val hostMixedCase: Boolean = hostMixedCase ?: false
-    val domainMixedCase: Boolean = domainMixedCase ?: false
-    val hostRemoveSpaces: Boolean = hostRemoveSpaces ?: false
-    val tlsRecordSplit: Boolean = tlsRecordSplit ?: false
-    val tlsRecordSplitPosition: Int = tlsRecordSplitPosition ?: 0
-    val tlsRecordSplitAtSni: Boolean = tlsRecordSplitAtSni ?: false
-    val hostsMode: HostsMode =
-        if (hosts?.isBlank() != false) {
-            HostsMode.Disable
-        } else {
-            hostsMode ?: HostsMode.Disable
-        }
-    val hosts: String? =
-        if (this.hostsMode == HostsMode.Disable) {
-            null
-        } else {
-            hosts?.trim()
-        }
-    val tcpFastOpen: Boolean = tcpFastOpen ?: false
-    val udpFakeCount: Int = udpFakeCount ?: 0
-    val dropSack: Boolean = dropSack ?: false
-    val fakeOffset: Int = byedpiFakeOffset ?: 0
-    val noIpv6: Boolean = noIpv6 ?: false
-    val connIp: String? = connIp?.trim()?.ifBlank { null }
-    val waitSend: Boolean = waitSend ?: false
-    val awaitInt: Int = awaitInt ?: 0
-    val md5sig: Boolean = md5sig ?: false
-    val fakeData: String? = fakeData?.trim()?.ifBlank { null }
-    val fakeTlsMod: String? = fakeTlsMod?.trim()?.ifBlank { null }
-    val tlsminor: Int = tlsminor ?: -1
-    val round: String? = round?.trim()?.ifBlank { null }
-    val pf: String? = pf?.trim()?.ifBlank { null }
-    val ipset: String? = ipset?.trim()?.ifBlank { null }
-    val auto: String? = auto?.trim()?.ifBlank { null }
-    val autoMode: String? = autoMode?.trim()?.ifBlank { null }
-    val timeout: String? = timeout?.trim()?.ifBlank { null }
-
-    constructor(preferences: SharedPreferences) : this(
-        ip = preferences.getString("byedpi_proxy_ip", null),
-        port = preferences.getString("byedpi_proxy_port", null)?.toIntOrNull(),
-        maxConnections = preferences.getString("byedpi_max_connections", null)?.toIntOrNull(),
-        bufferSize = preferences.getString("byedpi_buffer_size", null)?.toIntOrNull(),
-        defaultTtl = preferences.getString("byedpi_default_ttl", null)?.toIntOrNull(),
-        noDomain = preferences.getBoolean("byedpi_no_domain", false),
-        desyncHttp = preferences.getBoolean("byedpi_desync_http", true),
-        desyncHttps = preferences.getBoolean("byedpi_desync_https", true),
-        desyncUdp = preferences.getBoolean("byedpi_desync_udp", false),
-        desyncMethod =
-            preferences
-                .getString("byedpi_desync_method", null)
-                ?.let { DesyncMethod.fromName(it) },
-        splitPosition = preferences.getString("byedpi_split_position", null)?.toIntOrNull(),
-        splitAtHost = preferences.getBoolean("byedpi_split_at_host", false),
-        fakeTtl = preferences.getString("byedpi_fake_ttl", null)?.toIntOrNull(),
-        fakeSni = preferences.getString("byedpi_fake_sni", null),
-        oobChar = preferences.getString("byedpi_oob_data", null),
-        hostMixedCase = preferences.getBoolean("byedpi_host_mixed_case", false),
-        domainMixedCase = preferences.getBoolean("byedpi_domain_mixed_case", false),
-        hostRemoveSpaces = preferences.getBoolean("byedpi_host_remove_spaces", false),
-        tlsRecordSplit = preferences.getBoolean("byedpi_tlsrec_enabled", false),
-        tlsRecordSplitPosition =
-            preferences
-                .getString("byedpi_tlsrec_position", null)
-                ?.toIntOrNull(),
-        tlsRecordSplitAtSni = preferences.getBoolean("byedpi_tlsrec_at_sni", false),
-        hostsMode =
-            preferences
-                .getString("byedpi_hosts_mode", null)
-                ?.let { HostsMode.fromName(it) },
+    constructor(s: EngineSettings) : this(
+        ip = s.proxyIp.ifBlank { "127.0.0.1" },
+        port = s.proxyPort.toIntOrNull() ?: 1080,
+        maxConnections = s.maxConnections.toIntOrNull() ?: 512,
+        bufferSize = s.bufferSize.toIntOrNull() ?: 16384,
+        defaultTtl = s.defaultTtl.toIntOrNull() ?: 0,
+        customTtl = s.defaultTtl.toIntOrNull() != null && (s.defaultTtl.toIntOrNull() ?: 0) > 0,
+        noDomain = s.noDomain,
+        desyncHttp = s.desyncHttp,
+        desyncHttps = s.desyncHttps,
+        desyncUdp = s.desyncUdp,
+        desyncMethod = DesyncMethod.fromName(s.desyncMethod.ifBlank { "none" }),
+        splitPosition = s.splitPosition.toIntOrNull() ?: 1,
+        splitAtHost = s.splitAtHost,
+        fakeTtl = s.fakeTtl.toIntOrNull() ?: 8,
+        fakeSni = s.fakeSni.ifBlank { "www.iana.org" },
+        oobChar = (s.oobData.ifBlank { "a" })[0].code.toByte(),
+        hostMixedCase = s.hostMixedCase,
+        domainMixedCase = s.domainMixedCase,
+        hostRemoveSpaces = s.hostRemoveSpaces,
+        tlsRecordSplit = s.tlsrecEnabled,
+        tlsRecordSplitPosition = s.tlsrecPosition.toIntOrNull() ?: 0,
+        tlsRecordSplitAtSni = s.tlsrecAtSni,
+        hostsMode = HostsMode.fromName(s.hostsMode.ifBlank { "disable" }),
         hosts =
-            preferences.getString("byedpi_hosts_mode", null)?.let {
-                when (HostsMode.fromName(it)) {
-                    HostsMode.Blacklist -> preferences.getString("byedpi_hosts_blacklist", null)
-                    HostsMode.Whitelist -> preferences.getString("byedpi_hosts_whitelist", null)
-                    else -> null
-                }
+            when (s.hostsMode) {
+                "blacklist" -> s.hostsBlacklist.trim().ifBlank { null }
+                "whitelist" -> s.hostsWhitelist.trim().ifBlank { null }
+                else -> null
             },
-        tcpFastOpen = preferences.getBoolean("byedpi_tcp_fast_open", false),
-        udpFakeCount = preferences.getString("byedpi_udp_fake_count", null)?.toIntOrNull(),
-        dropSack = preferences.getBoolean("byedpi_drop_sack", false),
-        byedpiFakeOffset = preferences.getString("byedpi_fake_offset", null)?.toIntOrNull(),
-        noIpv6 = preferences.getBoolean("byedpi_no_ipv6", false),
-        connIp = preferences.getString("byedpi_conn_ip", null),
-        waitSend = preferences.getBoolean("byedpi_wait_send", false),
-        awaitInt = preferences.getString("byedpi_await_int", null)?.toIntOrNull(),
-        md5sig = preferences.getBoolean("byedpi_md5sig", false),
-        fakeData = preferences.getString("byedpi_fake_data", null),
-        fakeTlsMod = preferences.getString("byedpi_fake_tls_mod", null),
-        tlsminor = preferences.getString("byedpi_tlsminor", null)?.toIntOrNull(),
-        round = preferences.getString("byedpi_round", null),
-        pf = preferences.getString("byedpi_pf", null),
-        ipset = preferences.getString("byedpi_ipset", null),
-        auto = preferences.getString("byedpi_auto", null),
-        autoMode = preferences.getString("byedpi_auto_mode", null),
-        timeout = preferences.getString("byedpi_timeout", null),
+        tcpFastOpen = s.tcpFastOpen,
+        udpFakeCount = s.udpFakeCount.toIntOrNull() ?: 0,
+        dropSack = s.dropSack,
+        fakeOffset = s.fakeOffset.toIntOrNull() ?: 0,
+        noIpv6 = s.noIpv6,
+        connIp = s.connIp.trim().ifBlank { null },
+        waitSend = s.waitSend,
+        awaitInt = s.awaitInt.toIntOrNull() ?: 0,
+        md5sig = s.md5sig,
+        fakeData = s.fakeData.trim().ifBlank { null },
+        fakeTlsMod = s.fakeTlsMod.trim().ifBlank { null },
+        tlsminor = s.tlsminor.toIntOrNull() ?: -1,
+        round = s.round.trim().ifBlank { null },
+        pf = s.pf.trim().ifBlank { null },
+        ipset = s.ipset.trim().ifBlank { null },
+        auto = s.auto.trim().ifBlank { null },
+        autoMode = s.autoMode.trim().ifBlank { null },
+        timeout = s.timeout.trim().ifBlank { null },
     )
 
     enum class DesyncMethod {
@@ -202,14 +133,14 @@ class ByeDpiProxyUIPreferences(
 
         companion object {
             fun fromName(name: String): DesyncMethod =
-                when (name) {
+                when (name.lowercase()) {
                     "none" -> None
                     "split" -> Split
                     "disorder" -> Disorder
                     "fake" -> Fake
                     "oob" -> OOB
                     "disoob" -> DISOOB
-                    else -> throw IllegalArgumentException("Unknown desync method: $name")
+                    else -> Disorder
                 }
         }
     }
@@ -222,11 +153,11 @@ class ByeDpiProxyUIPreferences(
 
         companion object {
             fun fromName(name: String): HostsMode =
-                when (name) {
-                    "disable" -> Disable
+                when (name.lowercase()) {
+                    "disable", "none" -> Disable
                     "blacklist" -> Blacklist
                     "whitelist" -> Whitelist
-                    else -> throw IllegalArgumentException("Unknown hosts mode: $name")
+                    else -> Disable
                 }
         }
     }

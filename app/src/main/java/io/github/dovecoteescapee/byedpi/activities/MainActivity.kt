@@ -6,7 +6,6 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
-import android.content.SharedPreferences
 import android.content.pm.PackageManager
 import android.net.VpnService
 import android.os.Build
@@ -33,7 +32,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
-import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -43,6 +42,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.lifecycleScope
 import io.github.dovecoteescapee.byedpi.R
+import io.github.dovecoteescapee.byedpi.data.AppSettings
 import io.github.dovecoteescapee.byedpi.data.AppStatus
 import io.github.dovecoteescapee.byedpi.data.FAILED_BROADCAST
 import io.github.dovecoteescapee.byedpi.data.Mode
@@ -54,30 +54,22 @@ import io.github.dovecoteescapee.byedpi.services.ServiceManager
 import io.github.dovecoteescapee.byedpi.services.appStatus
 import io.github.dovecoteescapee.byedpi.ui.screens.MainScreen
 import io.github.dovecoteescapee.byedpi.ui.theme.ByeDpiTheme
-import io.github.dovecoteescapee.byedpi.utility.getPreferences
-import io.github.dovecoteescapee.byedpi.utility.getStringNotNull
-import io.github.dovecoteescapee.byedpi.utility.mode
+import io.github.dovecoteescapee.byedpi.utility.getSettingsRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import java.io.IOException
 
 class MainActivity : ComponentActivity() {
-    private var buttonText by mutableStateOf("")
-    private var statusText by mutableStateOf("")
-    private var proxyAddress by mutableStateOf("")
-    private var buttonEnabled by mutableStateOf(true)
-
     companion object {
         private val TAG: String = MainActivity::class.java.simpleName
 
-        fun applyAppTheme(themeName: String) {
-            val mode =
-                when (themeName) {
-                    "light" -> AppCompatDelegate.MODE_NIGHT_NO
-                    "dark" -> AppCompatDelegate.MODE_NIGHT_YES
-                    else -> AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM
-                }
-            AppCompatDelegate.setDefaultNightMode(mode)
+        fun applyAppTheme(theme: String) {
+            when (theme) {
+                "light" -> AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO)
+                "dark" -> AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_YES)
+                "system" -> AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM)
+                else -> AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM)
+            }
         }
 
         private fun collectLogs(): String? =
@@ -89,17 +81,26 @@ class MainActivity : ComponentActivity() {
                     .bufferedReader()
                     .use { it.readText() }
             } catch (e: Exception) {
-                Log.e(TAG, "Failed to collect logs", e)
                 null
             }
     }
+
+    private var statusText by mutableStateOf("")
+    private var buttonText by mutableStateOf("")
+    private var proxyAddress by mutableStateOf("")
+    private var buttonEnabled by mutableStateOf(false)
 
     private val vpnRegister =
         registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
             if (it.resultCode == RESULT_OK) {
                 ServiceManager.start(this, Mode.VPN)
             } else {
-                Toast.makeText(this, R.string.vpn_permission_denied, Toast.LENGTH_SHORT).show()
+                Toast
+                    .makeText(
+                        this,
+                        R.string.vpn_permission_denied,
+                        Toast.LENGTH_SHORT,
+                    ).show()
                 updateStatus()
             }
         }
@@ -180,32 +181,15 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 
+        val repository = getSettingsRepository()
+        lifecycleScope.launch {
+            repository.migrateFromSharedPreferencesIfNeeded()
+        }
+
         setContent {
-            val prefs = getPreferences()
-            var appTheme by remember {
-                mutableStateOf(prefs.getString("app_theme", "system") ?: "system")
-            }
-            var amoledTheme by remember {
-                mutableStateOf(prefs.getBoolean("amoled_theme", false))
-            }
+            val settings by repository.settingsFlow.collectAsState(initial = AppSettings())
 
-            DisposableEffect(prefs) {
-                val listener =
-                    SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
-                        if (key == "app_theme") {
-                            appTheme = prefs.getString("app_theme", "system") ?: "system"
-                        }
-                        if (key == "amoled_theme") {
-                            amoledTheme = prefs.getBoolean("amoled_theme", false)
-                        }
-                    }
-                prefs.registerOnSharedPreferenceChangeListener(listener)
-                onDispose {
-                    prefs.unregisterOnSharedPreferenceChangeListener(listener)
-                }
-            }
-
-            ByeDpiTheme(appTheme = appTheme, amoledTheme = amoledTheme) {
+            ByeDpiTheme(appTheme = settings.theme, amoledTheme = settings.amoledTheme) {
                 var menuExpanded by remember { mutableStateOf(false) }
 
                 Scaffold(
@@ -303,8 +287,10 @@ class MainActivity : ComponentActivity() {
             registerReceiver(receiver, intentFilter)
         }
 
-        val theme = getPreferences().getString("app_theme", null)
-        applyAppTheme(theme ?: "system")
+        lifecycleScope.launch {
+            val settings = repository.getSettings()
+            applyAppTheme(settings.theme)
+        }
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
             ContextCompat.checkSelfPermission(
@@ -327,17 +313,21 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun start() {
-        when (getPreferences().mode()) {
-            Mode.VPN -> {
-                val intentPrepare = VpnService.prepare(this)
-                if (intentPrepare != null) {
-                    vpnRegister.launch(intentPrepare)
-                } else {
-                    ServiceManager.start(this, Mode.VPN)
+        lifecycleScope.launch {
+            val settings = getSettingsRepository().getSettings()
+            val mode = Mode.fromString(settings.mode)
+            when (mode) {
+                Mode.VPN -> {
+                    val intentPrepare = VpnService.prepare(this@MainActivity)
+                    if (intentPrepare != null) {
+                        vpnRegister.launch(intentPrepare)
+                    } else {
+                        ServiceManager.start(this@MainActivity, Mode.VPN)
+                    }
                 }
-            }
 
-            Mode.Proxy -> ServiceManager.start(this, Mode.Proxy)
+                Mode.Proxy -> ServiceManager.start(this@MainActivity, Mode.Proxy)
+            }
         }
     }
 
@@ -346,44 +336,46 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun updateStatus() {
-        val (status, mode) = appStatus
+        val (status, currentMode) = appStatus
 
-        Log.i(TAG, "Updating status: $status, $mode")
+        Log.i(TAG, "Updating status: $status, $currentMode")
 
-        val preferences = getPreferences()
-        val proxyIp = preferences.getStringNotNull("byedpi_proxy_ip", "127.0.0.1")
-        val proxyPort = preferences.getStringNotNull("byedpi_proxy_port", "1080")
-        proxyAddress = getString(R.string.proxy_address, proxyIp, proxyPort)
+        lifecycleScope.launch {
+            val settings = getSettingsRepository().getSettings()
+            val proxyIp = settings.engine.proxyIp
+            val proxyPort = settings.engine.proxyPort
+            proxyAddress = getString(R.string.proxy_address, proxyIp, proxyPort)
 
-        when (status) {
-            AppStatus.Halted -> {
-                when (preferences.mode()) {
-                    Mode.VPN -> {
-                        statusText = getString(R.string.vpn_disconnected)
-                        buttonText = getString(R.string.vpn_connect)
+            when (status) {
+                AppStatus.Halted -> {
+                    when (Mode.fromString(settings.mode)) {
+                        Mode.VPN -> {
+                            statusText = getString(R.string.vpn_disconnected)
+                            buttonText = getString(R.string.vpn_connect)
+                        }
+
+                        Mode.Proxy -> {
+                            statusText = getString(R.string.proxy_down)
+                            buttonText = getString(R.string.proxy_start)
+                        }
                     }
-
-                    Mode.Proxy -> {
-                        statusText = getString(R.string.proxy_down)
-                        buttonText = getString(R.string.proxy_start)
-                    }
+                    buttonEnabled = true
                 }
-                buttonEnabled = true
-            }
 
-            AppStatus.Running -> {
-                when (mode) {
-                    Mode.VPN -> {
-                        statusText = getString(R.string.vpn_connected)
-                        buttonText = getString(R.string.vpn_disconnect)
-                    }
+                AppStatus.Running -> {
+                    when (currentMode) {
+                        Mode.VPN -> {
+                            statusText = getString(R.string.vpn_connected)
+                            buttonText = getString(R.string.vpn_disconnect)
+                        }
 
-                    Mode.Proxy -> {
-                        statusText = getString(R.string.proxy_up)
-                        buttonText = getString(R.string.proxy_stop)
+                        Mode.Proxy -> {
+                            statusText = getString(R.string.proxy_up)
+                            buttonText = getString(R.string.proxy_stop)
+                        }
                     }
+                    buttonEnabled = true
                 }
-                buttonEnabled = true
             }
         }
     }

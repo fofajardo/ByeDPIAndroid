@@ -82,9 +82,10 @@ class ByeDpiVpnService : LifecycleVpnService() {
         }
 
         try {
+            val settings = getSettingsRepository().getSettings()
             mutex.withLock {
-                startProxy()
-                startTun2Socks()
+                startProxy(settings)
+                startTun2Socks(settings)
             }
             updateStatus(ServiceStatus.Connected)
             startForeground()
@@ -127,7 +128,7 @@ class ByeDpiVpnService : LifecycleVpnService() {
         stopSelf()
     }
 
-    private suspend fun startProxy() {
+    private suspend fun startProxy(settings: AppSettings) {
         Log.i(TAG, "Starting proxy")
 
         if (proxyJob != null) {
@@ -135,7 +136,7 @@ class ByeDpiVpnService : LifecycleVpnService() {
             throw IllegalStateException("Proxy fields not null")
         }
 
-        val preferences = getByeDpiPreferences()
+        val preferences = ByeDpiProxyPreferences.fromEngineSettings(settings.engine)
 
         proxyJob = lifecycleScope.launch(Dispatchers.IO) {
             val code = byeDpiProxy.startProxy(preferences)
@@ -171,17 +172,16 @@ class ByeDpiVpnService : LifecycleVpnService() {
         Log.i(TAG, "Proxy stopped")
     }
 
-    private fun startTun2Socks() {
+    private fun startTun2Socks(settings: AppSettings) {
         Log.i(TAG, "Starting tun2socks")
 
         if (tunFd != null) {
             throw IllegalStateException("VPN field not null")
         }
 
-        val sharedPreferences = getPreferences()
-        val port = sharedPreferences.getString("byedpi_proxy_port", null)?.toInt() ?: 1080
-        val dns = sharedPreferences.getStringNotNull("dns_ip", "1.1.1.1")
-        val ipv6 = sharedPreferences.getBoolean("ipv6_enable", false)
+        val port = settings.engine.proxyPort.toIntOrNull() ?: 1080
+        val dns = settings.dnsIp
+        val ipv6 = settings.ipv6Enable
 
         val tun2socksConfig = """
         | misc:
@@ -202,7 +202,7 @@ class ByeDpiVpnService : LifecycleVpnService() {
             throw e
         }
 
-        val fd = createBuilder(dns, ipv6).establish()
+        val fd = createBuilder(settings).establish()
             ?: throw IllegalStateException("VPN connection failed")
 
         this.tunFd = fd
@@ -228,9 +228,6 @@ class ByeDpiVpnService : LifecycleVpnService() {
 
         Log.i(TAG, "Tun2socks stopped")
     }
-
-    private fun getByeDpiPreferences(): ByeDpiProxyPreferences =
-        ByeDpiProxyPreferences.fromSharedPreferences(getPreferences())
 
     private fun updateStatus(newStatus: ServiceStatus) {
         Log.d(TAG, "VPN status changed from $status to $newStatus")
@@ -270,7 +267,9 @@ class ByeDpiVpnService : LifecycleVpnService() {
             ByeDpiVpnService::class.java,
         )
 
-    private fun createBuilder(dns: String, ipv6: Boolean): Builder {
+    private fun createBuilder(settings: AppSettings): Builder {
+        val dns = settings.dnsIp
+        val ipv6 = settings.ipv6Enable
         Log.d(TAG, "DNS: $dns")
         val builder = Builder()
         builder.setSession("ByeDPI")
@@ -298,8 +297,8 @@ class ByeDpiVpnService : LifecycleVpnService() {
             builder.setMetered(false)
         }
 
-        val filter = getPreferences().getStringSet("vpn_filtered_apps", emptySet())!!
-        when (val filterMode = getPreferences().getString("vpn_filter_mode", "blacklist")) {
+        val filter = settings.vpnFilteredApps
+        when (val filterMode = settings.vpnFilterMode) {
             "blacklist" -> {
                 filter.forEach {
                     try {

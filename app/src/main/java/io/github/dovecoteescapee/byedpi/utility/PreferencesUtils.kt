@@ -1,14 +1,12 @@
 package io.github.dovecoteescapee.byedpi.utility
 
 import android.content.Context
-import android.content.SharedPreferences
 import io.github.dovecoteescapee.byedpi.data.Mode
+import io.github.dovecoteescapee.byedpi.data.SettingsRepository
 
-fun Context.getPreferences(): SharedPreferences = getSharedPreferences("${packageName}_preferences", Context.MODE_PRIVATE)
+fun Context.getSettingsRepository(): SettingsRepository = SettingsRepository(this.applicationContext)
 
-fun SharedPreferences.getStringNotNull(
-    key: String,
-    defValue: String,
-): String = getString(key, defValue) ?: defValue
-
-fun SharedPreferences.mode(): Mode = Mode.fromString(getStringNotNull("byedpi_mode", "vpn"))
+fun Context.currentMode(): Mode {
+    val settings = getSettingsRepository().getSettingsBlocking()
+    return Mode.fromString(settings.mode)
+}

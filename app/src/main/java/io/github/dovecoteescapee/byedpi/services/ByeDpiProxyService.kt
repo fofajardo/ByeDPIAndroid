@@ -114,7 +114,8 @@ class ByeDpiProxyService : LifecycleService() {
         }
 
         proxy = ByeDpiProxy()
-        val preferences = getByeDpiPreferences()
+        val settings = getSettingsRepository().getSettings()
+        val preferences = ByeDpiProxyPreferences.fromEngineSettings(settings.engine)
 
         proxyJob = lifecycleScope.launch(Dispatchers.IO) {
             val code = proxy.startProxy(preferences)
@@ -146,9 +147,6 @@ class ByeDpiProxyService : LifecycleService() {
 
         Log.i(TAG, "Proxy stopped")
     }
-
-    private fun getByeDpiPreferences(): ByeDpiProxyPreferences =
-        ByeDpiProxyPreferences.fromSharedPreferences(getPreferences())
 
     private fun updateStatus(newStatus: ServiceStatus) {
         Log.d(TAG, "Proxy status changed from $status to $newStatus")

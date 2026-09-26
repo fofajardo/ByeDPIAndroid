@@ -4,14 +4,17 @@ import android.content.Context
 import android.content.Intent
 import android.util.Log
 import androidx.core.content.ContextCompat
-import androidx.core.content.edit
 import io.github.dovecoteescapee.byedpi.data.Mode
 import io.github.dovecoteescapee.byedpi.data.START_ACTION
 import io.github.dovecoteescapee.byedpi.data.STOP_ACTION
-import io.github.dovecoteescapee.byedpi.utility.getPreferences
+import io.github.dovecoteescapee.byedpi.utility.getSettingsRepository
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 
 object ServiceManager {
     private val TAG: String = ServiceManager::class.java.simpleName
+    private val scope = CoroutineScope(Dispatchers.IO)
 
     fun start(
         context: Context,
@@ -32,7 +35,9 @@ object ServiceManager {
                 ContextCompat.startForegroundService(context, intent)
             }
         }
-        context.getPreferences().edit { putBoolean("was_running", true) }
+        scope.launch {
+            context.getSettingsRepository().update { it.copy(wasRunning = true) }
+        }
     }
 
     fun stop(context: Context) {
@@ -52,6 +57,8 @@ object ServiceManager {
                 ContextCompat.startForegroundService(context, intent)
             }
         }
-        context.getPreferences().edit { putBoolean("was_running", false) }
+        scope.launch {
+            context.getSettingsRepository().update { it.copy(wasRunning = false) }
+        }
     }
 }

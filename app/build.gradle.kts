@@ -3,6 +3,7 @@ import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.plugin.compose")
+    id("org.jetbrains.kotlin.plugin.serialization")
     id("com.diffplug.spotless")
 }
 
@@ -89,6 +90,9 @@ spotless {
 
 dependencies {
     implementation("com.github.alorma.compose-settings:ui-tiles-expressive:3.2.0")
+
+    implementation("androidx.datastore:datastore:1.1.2")
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.7.3")
 
     implementation("androidx.activity:activity-compose:1.9.3")
     implementation("androidx.compose.material:material-icons-core:1.7.6")
